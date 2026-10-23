@@ -1,1 +1,1 @@
-# raytracer
+# Tiny hobby ray tracer
