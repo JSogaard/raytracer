@@ -41,6 +41,16 @@ impl Vec3 {
         self.length_squared().sqrt()
     }
 
+    pub fn normalize(&self) -> Self {
+        let length = self.length();
+        
+        let x = self.x() / length;
+        let y = self.y() / length;
+        let z = self.z() / length;
+
+        Self::new(x, y, z)
+    }
+
     pub fn dot(&self, other: Self) -> f64 {
         self.x() * other.x() + self.y() * other.y() + self.z() * other.z()
     }
