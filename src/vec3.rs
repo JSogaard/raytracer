@@ -1,4 +1,5 @@
-use std::ops::{Add, Div, Mul, Sub};
+use image::Rgb;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 // Vector constants
 pub const UNIT_X: Vec3 = Vec3::new(1., 0., 0.);
@@ -16,16 +17,20 @@ impl Vec3 {
         Self { c: [x, y, z] }
     }
 
-    pub fn x(&self) -> f64 {
+    pub const fn x(&self) -> f64 {
         self.c[0]
     }
 
-    pub fn y(&self) -> f64 {
+    pub const fn y(&self) -> f64 {
         self.c[1]
     }
 
-    pub fn z(&self) -> f64 {
+    pub const fn z(&self) -> f64 {
         self.c[2]
+    }
+
+    pub const fn coords(&self) -> [f64; 3] {
+        [self.x(), self.y(), self.z()]
     }
 
     pub fn length_squared(&self) -> f64 {
@@ -47,6 +52,14 @@ impl Vec3 {
 
         Self::new(x, y, z)
     }
+
+    pub fn to_rgb(&self) -> Rgb<u8> {
+        let x = (self.x().clamp(0., 1.0) * 255.999) as u8;
+        let y = (self.y().clamp(0., 1.0) * 255.999) as u8;
+        let z = (self.z().clamp(0., 1.0) * 255.999) as u8;
+
+        Rgb([x, y, z])
+    }
 }
 
 impl Add for Vec3 {
@@ -57,11 +70,23 @@ impl Add for Vec3 {
     }
 }
 
+impl AddAssign for Vec3 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
 impl Sub for Vec3 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self::new(self.x() - rhs.x(), self.y() - rhs.y(), self.z() - rhs.z())
+    }
+}
+
+impl SubAssign for Vec3 {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
     }
 }
 
@@ -74,12 +99,24 @@ impl Mul for Vec3 {
     }
 }
 
+impl MulAssign for Vec3 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+
 /// Element-wise division
 impl Div for Vec3 {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
         Self::new(self.x() / rhs.x(), self.y() / rhs.y(), self.z() / rhs.z())
+    }
+}
+
+impl DivAssign for Vec3 {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
     }
 }
 
@@ -92,6 +129,12 @@ impl Mul<f64> for Vec3 {
     }
 }
 
+impl MulAssign<f64> for Vec3 {
+    fn mul_assign(&mut self, rhs: f64) {
+        *self = *self * rhs;
+    }
+}
+
 /// Scalar division
 impl Div<f64> for Vec3 {
     type Output = Self;
@@ -101,5 +144,26 @@ impl Div<f64> for Vec3 {
     }
 }
 
-pub type Point3 = Vec3;
+impl DivAssign<f64> for Vec3 {
+    fn div_assign(&mut self, rhs: f64) {
+        *self = *self / rhs;
+    }
+}
+
+impl std::fmt::Display for Vec3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let result = write!(f, "({} {} {})", self.x(), self.y(), self.z());
+        result
+    }
+}
+
+impl Neg for Vec3 {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self::new(self.x(), self.y(), self.z())
+    }
+}
+
+pub type Point = Vec3;
 pub type Color = Vec3;
