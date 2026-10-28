@@ -43,7 +43,7 @@ impl Vec3 {
 
     pub fn normalize(&self) -> Self {
         let length = self.length();
-        
+
         let x = self.x() / length;
         let y = self.y() / length;
         let z = self.z() / length;
@@ -64,9 +64,9 @@ impl Vec3 {
     }
 
     pub fn to_rgb(&self) -> Rgb<u8> {
-        let x = (self.x().clamp(0., 1.0) * 255.999) as u8;
-        let y = (self.y().clamp(0., 1.0) * 255.999) as u8;
-        let z = (self.z().clamp(0., 1.0) * 255.999) as u8;
+        let x = (self.x().clamp(0.0, 1.0) * 255.999) as u8;
+        let y = (self.y().clamp(0.0, 1.0) * 255.999) as u8;
+        let z = (self.z().clamp(0.0, 1.0) * 255.999) as u8;
 
         Rgb([x, y, z])
     }
