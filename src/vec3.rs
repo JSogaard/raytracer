@@ -44,6 +44,11 @@ impl Vec3 {
     pub fn normalize(&self) -> Self {
         let length = self.length();
 
+        assert!(
+            length != 0. && length.is_finite(),
+            "Cannot normalize a zero or non-finite vector"
+        );
+
         let x = self.x() / length;
         let y = self.y() / length;
         let z = self.z() / length;
@@ -97,6 +102,34 @@ impl Sub for Vec3 {
 impl SubAssign for Vec3 {
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
+    }
+}
+
+impl Add<f64> for Vec3 {
+    type Output = Self;
+
+    fn add(self, rhs: f64) -> Self::Output {
+        Self::new(self.x() + rhs, self.y() + rhs, self.z() + rhs)
+    }
+}
+
+impl AddAssign<f64> for Vec3 {
+    fn add_assign(&mut self, rhs: f64) {
+        *self = *self + rhs;
+    }
+}
+
+impl Sub<f64> for Vec3 {
+    type Output = Self;
+
+    fn sub(self, rhs: f64) -> Self::Output {
+        Self::new(self.x() - rhs, self.y() - rhs, self.z() - rhs)
+    }
+}
+
+impl SubAssign<f64> for Vec3 {
+    fn sub_assign(&mut self, rhs: f64) {
+        *self = *self + rhs;
     }
 }
 
@@ -179,7 +212,7 @@ impl Neg for Vec3 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Self::new(self.x(), self.y(), self.z())
+        Self::new(-self.x(), -self.y(), -self.z())
     }
 }
 

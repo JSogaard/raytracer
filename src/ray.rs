@@ -7,15 +7,18 @@ pub struct Ray {
 }
 
 impl Ray {
-    pub const fn new(orig: Point, dir: Vec3) -> Self {
-        Self { orig, dir }
+    pub fn new(orig: Point, dir: Vec3) -> Self {
+        Self {
+            orig,
+            dir: dir.normalize(),
+        }
     }
 
-    pub const fn origin(&self) -> Point {
+    pub fn origin(&self) -> Point {
         self.orig
     }
 
-    pub const fn direction(&self) -> Vec3 {
+    pub fn direction(&self) -> Vec3 {
         self.dir
     }
 

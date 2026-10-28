@@ -31,9 +31,10 @@ impl Camera {
         let direction = direction.normalize();
         let up_direction = up_direction.normalize();
 
-        if direction.dot(up_direction).abs() > 1e-10 {
-            panic!("Camera direction and up-direction are not perpendicular")
-        }
+        assert!(
+            direction.dot(up_direction).abs() > 1e-10,
+            "Camera direction and up-direction are not perpendicular"
+        );
 
         let (pixel_delta_x, pixel_delta_y, top_left) = calc_pixel_vecs(
             pixel_height,
