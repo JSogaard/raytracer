@@ -1,13 +1,10 @@
 use crate::{ray::Ray, vec3::Color};
 
 pub trait Hittable {
-    fn hit(&self, ray: Ray) -> HitResult;
+    fn hit(&self, ray: Ray) -> Option<Hit>;
 }
 
-pub enum HitResult {
-    Miss,
-    Hit {
-        distance: f64,
-        color: Color,
-    }
+pub struct Hit {
+    pub distance: f64,
+    pub color: Color,
 }

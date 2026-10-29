@@ -1,4 +1,10 @@
-use crate::vec3::{Point, Vec3};
+use crate::{
+    hittable::Hittable,
+    ray::Ray,
+    vec3::{Color, Point, Vec3},
+};
+use anyhow::Result;
+use image::{Rgb, RgbImage};
 
 #[derive(Debug, Clone)]
 pub struct Camera {
@@ -32,19 +38,19 @@ impl Camera {
         let up_direction = up_direction.normalize();
 
         assert!(
-            direction.dot(up_direction).abs() > 1e-10,
+            direction.dot(up_direction).abs() < 1e-10,
             "Camera direction and up-direction are not perpendicular"
         );
 
-        let (pixel_delta_x, pixel_delta_y, top_left) = calc_pixel_vecs(
-            pixel_height,
-            center,
-            pixel_width,
-            viewport_height,
-            viewport_width,
-            direction,
-            up_direction,
-        );
+        let pixel_delta_x =
+            (direction.cross(up_direction)).normalize() * viewport_width / pixel_width as f64;
+
+        let pixel_delta_y = -up_direction * viewport_height / pixel_height as f64;
+
+        let top_left = center + direction - viewport_width / 2. * pixel_delta_x.normalize()
+            + viewport_height / 2. * up_direction
+            + pixel_delta_x / 2.
+            + pixel_delta_y / 2.;
 
         Self {
             pixel_width,
@@ -59,26 +65,31 @@ impl Camera {
             top_left,
         }
     }
-}
 
-fn calc_pixel_vecs(
-    pixel_height: u32,
-    center: Vec3,
-    pixel_width: u32,
-    viewport_height: f64,
-    viewport_width: f64,
-    direction: Vec3,
-    up_direction: Vec3,
-) -> (Vec3, Vec3, Vec3) {
-    let pixel_delta_x =
-        (direction.cross(up_direction)).normalize() * viewport_width / pixel_width as f64;
+    pub fn render(&mut self, shapes: &[Box<dyn Hittable>]) -> RgbImage {
+        let mut image: RgbImage = RgbImage::new(self.pixel_width, self.pixel_height);
 
-    let pixel_delta_y = -up_direction * viewport_height / pixel_height as f64;
+        image.enumerate_pixels_mut().for_each(|(x, y, pixel)| {
+            let pixel_vec =
+                self.top_left + x as f64 * self.pixel_delta_x + y as f64 * self.pixel_delta_y;
+            let direction = pixel_vec - self.center;
+            let ray = Ray::new(self.center, direction);
 
-    let top_left = center + direction - viewport_width / 2. * pixel_delta_x.normalize()
-        + viewport_height / 2. * up_direction
-        + pixel_delta_x / 2.
-        + pixel_delta_y / 2.;
+            let hit = shapes
+                .iter()
+                .filter_map(|shape| shape.hit(ray))
+                .min_by(|x, y| x.distance.total_cmp(&y.distance));
 
-    (pixel_delta_x, pixel_delta_y, top_left)
+            let color: Color = if let Some(hit) = hit {
+                hit.color
+            } else {
+                let a = (ray.direction().y() + 1.0) / 2.0;
+                a * Color::new(0.5, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
+            };
+
+            *pixel = color.to_rgb();
+        });
+
+        image
+    }
 }
