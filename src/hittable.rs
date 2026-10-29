@@ -1,6 +1,6 @@
 use crate::{ray::Ray, vec3::Color};
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, ray: Ray) -> Option<Hit>;
 }
 

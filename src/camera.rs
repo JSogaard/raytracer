@@ -3,8 +3,8 @@ use crate::{
     ray::Ray,
     vec3::{Color, Point, Vec3},
 };
-use anyhow::Result;
-use image::{Rgb, RgbImage};
+use image::RgbImage;
+use rayon::iter::ParallelIterator;
 
 #[derive(Debug, Clone)]
 pub struct Camera {
@@ -66,10 +66,10 @@ impl Camera {
         }
     }
 
-    pub fn render(&mut self, shapes: &[Box<dyn Hittable>]) -> RgbImage {
+    pub fn render(&self, shapes: &[Box<dyn Hittable>]) -> RgbImage {
         let mut image: RgbImage = RgbImage::new(self.pixel_width, self.pixel_height);
 
-        image.enumerate_pixels_mut().for_each(|(x, y, pixel)| {
+        image.par_enumerate_pixels_mut().for_each(|(x, y, pixel)| {
             let pixel_vec =
                 self.top_left + x as f64 * self.pixel_delta_x + y as f64 * self.pixel_delta_y;
             let direction = pixel_vec - self.center;
@@ -83,7 +83,7 @@ impl Camera {
             let color: Color = if let Some(hit) = hit {
                 hit.color
             } else {
-                let a = (ray.direction().y() + 1.0) / 2.0;
+                let a = (ray.direction().z() + 1.0) / 2.0;
                 a * Color::new(0.5, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
             };
 
