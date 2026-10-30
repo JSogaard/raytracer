@@ -9,10 +9,10 @@ use raytracer::{
 };
 
 fn main() -> Result<()> {
-    let shapes: Vec<Box<dyn Hittable>> = vec![Box::new(Sphere::new(
-        Point::new(3.0, 0.0, 0.0),
-        1.0,
-    ))];
+    let shapes: Vec<Box<dyn Hittable>> = vec![
+        Box::new(Sphere::new(Point::new(3.0, 0.0, 0.0), 1.0)),
+        Box::new(Sphere::new(Point::new(1.5, 0.0, -2000.0), -1998.0)),
+    ];
     let camera = Camera::new(
         16.0 / 9.0,
         1080,

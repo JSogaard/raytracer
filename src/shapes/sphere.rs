@@ -1,4 +1,4 @@
-use crate::{ hittable::{Hit, Hittable}, ray::Ray, vec3::{Color, Point, Vec3}};
+use crate::{ hittable::{Hit, Hittable}, ray::Ray, vec3::{Point, Vec3}};
 
 pub struct Sphere {
     center: Point,
@@ -12,7 +12,12 @@ impl Sphere {
 
     fn normal(&self, ray: &Ray, distance: f64) -> Vec3 {
         let intersept: Point = ray.point_at(distance);
-        (intersept - self.center).normalize()
+        let normal = (intersept - self.center) / self.radius;
+        if ray.direction().dot(normal) <= 0.0 {
+            normal
+        } else {
+            -normal
+        }
     }
 }
 

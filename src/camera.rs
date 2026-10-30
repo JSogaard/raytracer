@@ -87,8 +87,8 @@ impl Camera {
 }
 
 fn calc_color(normal: Vec3) -> Color {
-    let r = (normal.z() + 1.0) / 2.0;
-    let g = (normal.x() + 1.0) / 2.0;
+    let r = (normal.x() + 1.0) / 2.0;
+    let g = (normal.z() + 1.0) / 2.0;
     let b = (normal.y() + 1.0) / 2.0;
 
     Color::new(r, g, b)
