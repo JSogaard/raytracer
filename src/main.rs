@@ -12,7 +12,6 @@ fn main() -> Result<()> {
     let shapes: Vec<Box<dyn Hittable>> = vec![Box::new(Sphere::new(
         Point::new(3.0, 0.0, 0.0),
         1.0,
-        Color::new(0.9, 0.3, 0.3),
     ))];
     let camera = Camera::new(
         16.0 / 9.0,

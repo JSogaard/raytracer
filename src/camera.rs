@@ -10,11 +10,7 @@ use rayon::iter::ParallelIterator;
 pub struct Camera {
     pixel_width: u32,
     pixel_height: u32,
-    viewport_width: f64,
-    viewport_height: f64,
     center: Point,
-    direction: Vec3,
-    up_direction: Vec3,
     pixel_delta_x: Vec3,
     pixel_delta_y: Vec3,
     top_left: Point,
@@ -55,11 +51,7 @@ impl Camera {
         Self {
             pixel_width,
             pixel_height,
-            viewport_width,
-            viewport_height,
             center,
-            direction,
-            up_direction,
             pixel_delta_x,
             pixel_delta_y,
             top_left,
