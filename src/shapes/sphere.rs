@@ -1,4 +1,4 @@
-use crate::{ hittable::{Hit, Hittable}, ray::Ray, vec3::{Color, Point}};
+use crate::{ hittable::{Hit, Hittable}, ray::Ray, vec3::{Color, Point, Vec3}};
 
 pub struct Sphere {
     center: Point,
@@ -10,20 +10,14 @@ impl Sphere {
         Self { center, radius }
     }
 
-    fn calc_color(&self, ray: &Ray, distance: f64) -> Color {
+    fn normal(&self, ray: &Ray, distance: f64) -> Vec3 {
         let intersept: Point = ray.point_at(distance);
-        let normal = (intersept - self.center).normalize();
-
-        let r = (normal.z() + 1.0) / 2.0;
-        let g = (normal.x() + 1.0) / 2.0;
-        let b = (normal.y() + 1.0) / 2.0;
-
-        Color::new(r, g, b)
+        (intersept - self.center).normalize()
     }
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: Ray) -> Option<Hit> {
+    fn hit(&self, ray: &Ray) -> Option<Hit> {
         let orig = ray.origin();
         let dir = ray.direction();
 
@@ -41,12 +35,12 @@ impl Hittable for Sphere {
             if near >= 0. {
                 Some(Hit {
                     distance: near,
-                    color: self.calc_color(&ray, near),
+                    normal: self.normal(ray, near),
                 })
             } else if far >= 0. {
                 Some(Hit {
                     distance: far,
-                    color: self.calc_color(&ray, far),
+                    normal: self.normal(ray, far),
                 })
             } else {
                 None

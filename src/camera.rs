@@ -69,13 +69,13 @@ impl Camera {
 
             let hit = shapes
                 .iter()
-                .filter_map(|shape| shape.hit(ray))
+                .filter_map(|shape| shape.hit(&ray))
                 .min_by(|x, y| x.distance.total_cmp(&y.distance));
 
             let color: Color = if let Some(hit) = hit {
-                hit.color
+                calc_color(hit.normal)
             } else {
-                let a = (ray.direction().z() + 1.0) / 2.0;
+                let a = (&ray.direction().z() + 1.0) / 2.0;
                 a * Color::new(0.5, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
             };
 
@@ -84,4 +84,12 @@ impl Camera {
 
         image
     }
+}
+
+fn calc_color(normal: Vec3) -> Color {
+    let r = (normal.z() + 1.0) / 2.0;
+    let g = (normal.x() + 1.0) / 2.0;
+    let b = (normal.y() + 1.0) / 2.0;
+
+    Color::new(r, g, b)
 }

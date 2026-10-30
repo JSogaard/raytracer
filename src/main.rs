@@ -5,7 +5,7 @@ use raytracer::{
     camera::Camera,
     hittable::Hittable,
     shapes::sphere::Sphere,
-    vec3::{Color, Point, Vec3},
+    vec3::{Point, Vec3},
 };
 
 fn main() -> Result<()> {
