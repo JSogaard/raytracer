@@ -1,7 +1,7 @@
-use crate::{ray::Ray, vec3::Vec3};
+use crate::{interval::Interval, ray::Ray, vec3::Vec3};
 
 pub trait Hittable: Send + Sync {
-    fn hit(&self, ray: &Ray) -> Option<Hit>;
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit>;
 }
 
 pub struct Hit {

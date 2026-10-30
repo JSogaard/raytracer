@@ -1,4 +1,4 @@
-use crate::{ hittable::{Hit, Hittable}, ray::Ray, vec3::{Point, Vec3}};
+use crate::{ hittable::{Hit, Hittable}, interval::Interval, ray::Ray, vec3::{Point, Vec3}};
 
 pub struct Sphere {
     center: Point,
@@ -22,7 +22,7 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray) -> Option<Hit> {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit> {
         let orig = ray.origin();
         let dir = ray.direction();
 
@@ -37,12 +37,12 @@ impl Hittable for Sphere {
             let near = (h - d.sqrt()) / a;
             let far = (h + d.sqrt()) / a;
             
-            if near >= 0. {
+            if ray_t.surrounds(near) {
                 Some(Hit {
                     distance: near,
                     normal: self.normal(ray, near),
                 })
-            } else if far >= 0. {
+            } else if ray_t.surrounds(far) {
                 Some(Hit {
                     distance: far,
                     normal: self.normal(ray, far),

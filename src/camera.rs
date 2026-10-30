@@ -1,7 +1,5 @@
 use crate::{
-    hittable::Hittable,
-    ray::Ray,
-    vec3::{Color, Point, Vec3},
+    hittable::Hittable, interval::Interval, ray::Ray, vec3::{Color, Point, Vec3},
 };
 use image::RgbImage;
 use rayon::iter::ParallelIterator;
@@ -58,7 +56,7 @@ impl Camera {
         }
     }
 
-    pub fn render(&self, shapes: &[Box<dyn Hittable>]) -> RgbImage {
+    pub fn render(&self, shapes: &[Box<dyn Hittable>], ray_t: Interval) -> RgbImage {
         let mut image: RgbImage = RgbImage::new(self.pixel_width, self.pixel_height);
 
         image.par_enumerate_pixels_mut().for_each(|(x, y, pixel)| {
@@ -69,8 +67,8 @@ impl Camera {
 
             let hit = shapes
                 .iter()
-                .filter_map(|shape| shape.hit(&ray))
-                .min_by(|x, y| x.distance.total_cmp(&y.distance));
+                .filter_map(|shape| shape.hit(&ray, ray_t))
+                .min_by(|x, y| f64::total_cmp(&x.distance, &y.distance));
 
             let color: Color = if let Some(hit) = hit {
                 calc_color(hit.normal)

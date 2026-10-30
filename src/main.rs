@@ -2,10 +2,7 @@ use std::time::Instant;
 
 use anyhow::Result;
 use raytracer::{
-    camera::Camera,
-    hittable::Hittable,
-    shapes::sphere::Sphere,
-    vec3::{Point, Vec3},
+    camera::Camera, hittable::Hittable, interval::Interval, shapes::sphere::Sphere, vec3::{Point, Vec3},
 };
 
 fn main() -> Result<()> {
@@ -22,9 +19,11 @@ fn main() -> Result<()> {
         Vec3::new(0.0, 0.0, 1.0),
     );
 
+    let ray_t = Interval::new(0.0, f64::INFINITY);
+
     let start = Instant::now();
 
-    let image = camera.render(&shapes);
+    let image = camera.render(&shapes, ray_t);
 
     println!("{:?}", start.elapsed());
 
