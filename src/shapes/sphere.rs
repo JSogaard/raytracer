@@ -1,5 +1,6 @@
 use crate::{ hittable::{Hit, Hittable}, interval::Interval, ray::Ray, vec3::{Point, Vec3}};
 
+#[derive(Debug, Clone)]
 pub struct Sphere {
     center: Point,
     radius: f64,
