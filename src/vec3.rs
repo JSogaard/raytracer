@@ -1,5 +1,7 @@
 use image::Rgb;
+use rand::random;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+
 
 // Vector constants
 pub const UNIT_X: Vec3 = Vec3::new(1., 0., 0.);
@@ -75,6 +77,30 @@ impl Vec3 {
 
         Rgb([x, y, z])
     }
+
+    pub fn random_unit_vec() -> Vec3 {
+        loop {
+            let x = random::<f64>() * 2.0 - 1.0;
+            let y = random::<f64>() * 2.0 - 1.0;
+            let z = random::<f64>() * 2.0 - 1.0;
+            
+            let vec = Vec3::new(x, y, z);
+            let len_sq = vec.length_squared();
+
+            if len_sq > 1e-160 && len_sq <= 1.0 {
+                return vec / len_sq.sqrt()
+            }
+        }
+    }
+
+    pub fn random_on_hemisphere(normal: Vec3) -> Vec3 {
+        let vec = Self::random_unit_vec();
+        if vec.dot(normal) >= 0.0 {
+            vec
+        } else {
+            -vec
+        }
+    }
 }
 
 impl Add for Vec3 {
@@ -112,7 +138,6 @@ impl Add<f64> for Vec3 {
         Self::new(self.x() + rhs, self.y() + rhs, self.z() + rhs)
     }
 }
-
 
 impl AddAssign<f64> for Vec3 {
     fn add_assign(&mut self, rhs: f64) {

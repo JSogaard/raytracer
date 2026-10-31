@@ -1,8 +1,14 @@
 use crate::{
-    interval::Interval, ray::Ray, scene::Scene, vec3::{Color, Point, Vec3},
+    interval::Interval,
+    ray::Ray,
+    scene::Scene,
+    vec3::{Color, Point, Vec3},
 };
 use image::RgbImage;
+use rand::random;
 use rayon::iter::ParallelIterator;
+
+const MAX_DEPTH: i32 = 10;
 
 #[derive(Debug, Clone)]
 pub struct Camera {
@@ -12,6 +18,8 @@ pub struct Camera {
     pixel_delta_x: Vec3,
     pixel_delta_y: Vec3,
     top_left: Point,
+    samples_pr_pixel: u32,
+    pixel_sample_scale: f64,
 }
 
 impl Camera {
@@ -22,6 +30,7 @@ impl Camera {
         center: Point,
         direction: Vec3,
         up_direction: Vec3,
+        samples_pr_pixel: u32,
     ) -> Self {
         let vfov = vfov.to_radians();
         let pixel_width = (pixel_height as f64 * aspect_ratio) as u32;
@@ -46,6 +55,8 @@ impl Camera {
             + pixel_delta_x / 2.
             + pixel_delta_y / 2.;
 
+        let pixel_sample_scale = 1.0 / samples_pr_pixel as f64;
+
         Self {
             pixel_width,
             pixel_height,
@@ -53,6 +64,8 @@ impl Camera {
             pixel_delta_x,
             pixel_delta_y,
             top_left,
+            samples_pr_pixel,
+            pixel_sample_scale,
         }
     }
 
@@ -62,17 +75,19 @@ impl Camera {
         image.par_enumerate_pixels_mut().for_each(|(x, y, pixel)| {
             let pixel_vec =
                 self.top_left + x as f64 * self.pixel_delta_x + y as f64 * self.pixel_delta_y;
-            let direction = pixel_vec - self.center;
-            let ray = Ray::new(self.center, direction);
+            let pixel_dir = pixel_vec - self.center;
 
-            let hit = scene.hit(&ray, ray_t);
+            let mut color = Color::new(0.0, 0.0, 0.0);
 
-            let color: Color = if let Some(hit) = hit {
-                calc_color(hit.normal)
-            } else {
-                let a = (&ray.direction().z() + 1.0) / 2.0;
-                a * Color::new(0.5, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
-            };
+            for _ in 0..self.samples_pr_pixel {
+                let ray_dir: Vec3 = pixel_dir
+                    + (random::<f64>() - 0.5) * self.pixel_delta_x
+                    + (random::<f64>() - 0.5) * self.pixel_delta_y;
+                let ray = Ray::new(self.center, ray_dir);
+                color += ray_color(&ray, ray_t, scene, MAX_DEPTH);
+            }
+
+            color *= self.pixel_sample_scale;
 
             *pixel = color.to_rgb();
         });
@@ -81,10 +96,20 @@ impl Camera {
     }
 }
 
-fn calc_color(normal: Vec3) -> Color {
-    let r = (normal.x() + 1.0) / 2.0;
-    let g = (normal.z() + 1.0) / 2.0;
-    let b = (normal.y() + 1.0) / 2.0;
+fn ray_color(ray: &Ray, ray_t: Interval, scene: &Scene, depth: i32) -> Color {
+    if depth <= 0 {
+        return Color::new(0.0, 0.0, 0.0);
+    }
 
-    Color::new(r, g, b)
+    let hit = scene.hit(ray, ray_t);
+
+    if let Some(hit) = hit {
+        let hit_point = ray.point_at(hit.distance);
+        let direction = hit.normal + Vec3::random_unit_vec();
+        let new_ray = Ray::new(hit_point, direction);
+        0.5 * ray_color(&new_ray, ray_t, scene, depth - 1)
+    } else {
+        let a = (&ray.direction().z() + 1.0) / 2.0;
+        a * Color::new(0.5, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
+    }
 }

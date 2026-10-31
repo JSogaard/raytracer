@@ -14,7 +14,7 @@ impl Scene {
         Self { shapes }
     }
 
-    pub fn push_shape(&mut self, shape: Box<dyn Hittable>) {
+    pub fn add_shape(&mut self, shape: Box<dyn Hittable>) {
         self.shapes.push(shape);
     }
 
