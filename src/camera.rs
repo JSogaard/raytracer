@@ -107,7 +107,7 @@ fn ray_color(ray: &Ray, ray_t: Interval, scene: &Scene, depth: i32) -> Color {
         let hit_point = ray.point_at(hit.distance);
         let direction = hit.normal + Vec3::random_unit_vec();
         let new_ray = Ray::new(hit_point, direction);
-        0.5 * ray_color(&new_ray, ray_t, scene, depth - 1)
+        0.7 * ray_color(&new_ray, ray_t, scene, depth - 1)
     } else {
         let a = (&ray.direction().z() + 1.0) / 2.0;
         a * Color::new(0.5, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
