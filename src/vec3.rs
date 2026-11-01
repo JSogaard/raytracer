@@ -2,7 +2,6 @@ use image::Rgb;
 use rand::random;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-
 // Vector constants
 pub const UNIT_X: Vec3 = Vec3::new(1., 0., 0.);
 pub const UNIT_Y: Vec3 = Vec3::new(0., 1., 0.);
@@ -19,6 +18,10 @@ impl Vec3 {
         Self { c: [x, y, z] }
     }
 
+    pub const fn from_array(coords: [f64; 3]) -> Self {
+        Self { c: coords }
+    }
+
     pub const fn x(&self) -> f64 {
         self.c[0]
     }
@@ -32,7 +35,7 @@ impl Vec3 {
     }
 
     pub const fn coords(&self) -> [f64; 3] {
-        [self.x(), self.y(), self.z()]
+        self.c
     }
 
     pub fn length_squared(&self) -> f64 {
@@ -70,6 +73,10 @@ impl Vec3 {
         Self::new(x, y, z)
     }
 
+    pub fn map(&self, func: impl FnMut(f64) -> f64) -> Self {
+        Self::from_array(self.coords().map(func))
+    }
+
     pub fn to_rgb(&self) -> Rgb<u8> {
         let x = (self.x().clamp(0.0, 1.0) * 255.999) as u8;
         let y = (self.y().clamp(0.0, 1.0) * 255.999) as u8;
@@ -83,23 +90,19 @@ impl Vec3 {
             let x = random::<f64>() * 2.0 - 1.0;
             let y = random::<f64>() * 2.0 - 1.0;
             let z = random::<f64>() * 2.0 - 1.0;
-            
+
             let vec = Vec3::new(x, y, z);
             let len_sq = vec.length_squared();
 
             if len_sq > 1e-160 && len_sq <= 1.0 {
-                return vec / len_sq.sqrt()
+                return vec / len_sq.sqrt();
             }
         }
     }
 
     pub fn random_on_hemisphere(normal: Vec3) -> Vec3 {
         let vec = Self::random_unit_vec();
-        if vec.dot(normal) >= 0.0 {
-            vec
-        } else {
-            -vec
-        }
+        if vec.dot(normal) >= 0.0 { vec } else { -vec }
     }
 }
 
