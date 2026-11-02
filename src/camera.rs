@@ -115,7 +115,11 @@ fn ray_color(ray: &Ray, ray_t: Interval, scene: &Scene, depth: i32) -> Color {
             Color::new(0.0, 0.0, 0.0)
         }
     } else {
-        let a = (&ray.direction().z() + 1.0) / 2.0;
-        a * Color::new(0.5, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
+        background_color(ray)
     }
+}
+
+fn background_color(ray: &Ray) -> Color {
+    let a = (&ray.direction().z() + 1.0) / 2.0;
+    a * Color::new(0.4, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
 }
