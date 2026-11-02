@@ -6,6 +6,7 @@ use raytracer::{
     interval::Interval,
     lambertian::Lambertian,
     scene::Scene,
+    shape::Shape,
     shapes::sphere::Sphere,
     vec3::{Color, Point, Vec3},
 };
@@ -15,14 +16,14 @@ fn main() -> Result<()> {
 
     let lambertian = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
 
-    let circle = Sphere::new(Point::new(3.0, 0.0, 0.0), 1.0, lambertian.clone());
-    scene.add_shape(Box::new(circle));
+    let sphere = Sphere::new(Point::new(3.0, 0.0, 0.0), 1.0, lambertian.clone());
+    scene.add_shape(Shape::Sphere(sphere));
 
-    let circle = Sphere::new(Point::new(1.5, 0.0, -2000.0), 1999.0, lambertian.clone());
-    scene.add_shape(Box::new(circle));
+    let sphere = Sphere::new(Point::new(1.5, 0.0, -2000.0), 1999.0, lambertian.clone());
+    scene.add_shape(Shape::Sphere(sphere));
 
-    let circle = Sphere::new(Point::new(3.0, 2000.0, 0.0), -1999.0, lambertian.clone());
-    scene.add_shape(Box::new(circle));
+    let sphere = Sphere::new(Point::new(3.0, 2000.0, 0.0), -1999.0, lambertian.clone());
+    scene.add_shape(Shape::Sphere(sphere));
 
     let camera = Camera::new(
         1.0,

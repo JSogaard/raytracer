@@ -1,11 +1,11 @@
-use std::sync::Arc;
 use crate::{
-    hittable::{Hit, Hittable},
     interval::Interval,
     material::Material,
     ray::Ray,
+    shape::Hit,
     vec3::{Point, Vec3},
 };
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Sphere {
@@ -23,18 +23,7 @@ impl Sphere {
         }
     }
 
-    fn normal(&self, ray: &Ray, intercept: Point) -> Vec3 {
-        let normal = (intercept - self.center) / self.radius;
-        if ray.direction().dot(normal) <= 0.0 {
-            normal
-        } else {
-            -normal
-        }
-    }
-}
-
-impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit> {
+    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit> {
         let orig = ray.origin();
         let dir = ray.direction();
 
@@ -68,6 +57,15 @@ impl Hittable for Sphere {
             } else {
                 None
             }
+        }
+    }
+
+    fn normal(&self, ray: &Ray, intercept: Point) -> Vec3 {
+        let normal = (intercept - self.center) / self.radius;
+        if ray.direction().dot(normal) <= 0.0 {
+            normal
+        } else {
+            -normal
         }
     }
 }

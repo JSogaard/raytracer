@@ -1,5 +1,5 @@
 
-use crate::hittable::Hit;
+use crate::shape::Hit;
 use crate::material::{Material, Scatter};
 use crate::ray::Ray;
 use crate::vec3::{Color, Vec3};

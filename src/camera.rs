@@ -102,12 +102,9 @@ fn ray_color(ray: &Ray, ray_t: Interval, scene: &Scene, depth: i32) -> Color {
         return Color::new(0.0, 0.0, 0.0);
     }
 
-    let hit = scene.hit(ray, ray_t);
+    let hit = scene.hit_shapes(ray, ray_t);
 
     if let Some(hit) = hit {
-        // let hit_point = ray.point_at(hit.distance);
-        // let direction = hit.normal + Vec3::random_unit_vec();
-        // let new_ray = Ray::new(hit_point, direction);
         let scatter = hit.material.scatter(ray, &hit);
         if let Some(scatter) = scatter {
             scatter.attenuation * ray_color(&scatter.ray, ray_t, scene, depth - 1)

@@ -1,32 +1,22 @@
 use crate::{
-    hittable::{Hit, Hittable},
-    interval::Interval,
-    ray::Ray,
+    interval::Interval, ray::Ray, shape::{Hit, Shape},
 };
 
 #[derive(Debug, Default)]
 pub struct Scene {
-    shapes: Vec<Box<dyn Hittable>>,
+    shapes: Vec<Shape>,
 }
 
 impl Scene {
-    pub fn new(shapes: Vec<Box<dyn Hittable>>) -> Self {
+    pub fn new(shapes: Vec<Shape>) -> Self {
         Self { shapes }
     }
 
-    pub fn add_shape(&mut self, shape: Box<dyn Hittable>) {
+    pub fn add_shape(&mut self, shape: Shape) {
         self.shapes.push(shape);
     }
 
-    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit> {
-        // self.shapes.iter()
-        //     .fold((ray_t.max(), None), |(closest, closest_hit), next| {
-        //         match next.hit(ray, Interval::new(ray_t.min(), closest)) {
-        //             Some(hit) => (hit.distance, Some(hit)),
-        //             None => (closest, closest_hit)
-        //         }
-        // }).1
-
+    pub fn hit_shapes(&self, ray: &Ray, ray_t: Interval) -> Option<Hit> {
         let mut closest = ray_t.max();
         let mut closest_hit = None;
 

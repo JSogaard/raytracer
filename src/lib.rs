@@ -1,7 +1,7 @@
 pub mod vec3;
 pub mod ray;
 pub mod camera;
-pub mod hittable;
+pub mod shape;
 pub mod shapes;
 pub mod interval;
 pub mod scene;
