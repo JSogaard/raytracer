@@ -100,9 +100,9 @@ impl Vec3 {
         }
     }
 
-    pub fn random_on_hemisphere(normal: Vec3) -> Vec3 {
-        let vec = Self::random_unit_vec();
-        if vec.dot(normal) >= 0.0 { vec } else { -vec }
+    pub fn near_zero(&self) -> bool {
+        const LIMIT: f64 = 1e-8;
+        self.x().abs() < LIMIT && self.y().abs() < LIMIT && self.z().abs() < LIMIT
     }
 }
 
