@@ -1,4 +1,3 @@
-use std::sync::Arc;
 
 use crate::hittable::Hit;
 use crate::material::{Material, Scatter};
@@ -11,8 +10,8 @@ pub struct Lambertian {
 }
 
 impl Lambertian {
-    pub fn new_arc(albedo: Color) -> Arc<Self> {
-        Arc::new(Self { albedo })
+    pub fn new(albedo: Color) -> Self {
+        Self { albedo }
     }
 }
 

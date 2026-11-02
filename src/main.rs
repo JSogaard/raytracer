@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use anyhow::Result;
 use raytracer::{
@@ -8,7 +8,7 @@ use raytracer::{
 fn main() -> Result<()> {
     let mut scene = Scene::default();
 
-    let lambertian = Lambertian::new_arc(Color::new(0.5, 0.5, 0.5));
+    let lambertian = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
 
     scene.add_shape(Box::new(Sphere::new(Point::new(3.0, 0.0, 0.0), 1.0, lambertian.clone())));
     scene.add_shape(Box::new(Sphere::new(Point::new(1.5, 0.0, -2000.0), 1999.0, lambertian.clone())));
