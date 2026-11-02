@@ -1,19 +1,31 @@
-use crate::{ hittable::{Hit, Hittable}, interval::Interval, ray::Ray, vec3::{Point, Vec3}};
+use std::sync::Arc;
+use crate::{
+    hittable::{Hit, Hittable},
+    interval::Interval,
+    material::Material,
+    ray::Ray,
+    vec3::{Point, Vec3},
+};
 
 #[derive(Debug, Clone)]
 pub struct Sphere {
     center: Point,
     radius: f64,
+    material: Arc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f64) -> Self {
-        Self { center, radius }
+    pub fn new(center: Point, radius: f64, material: Arc<dyn Material>) -> Self {
+        Self {
+            center,
+            radius,
+            material,
+        }
     }
 
     fn normal(&self, ray: &Ray, distance: f64) -> Vec3 {
-        let intersept: Point = ray.point_at(distance);
-        let normal = (intersept - self.center) / self.radius;
+        let intercept: Point = ray.point_at(distance);
+        let normal = (intercept - self.center) / self.radius;
         if ray.direction().dot(normal) <= 0.0 {
             normal
         } else {
@@ -37,16 +49,20 @@ impl Hittable for Sphere {
         } else {
             let near = (h - d.sqrt()) / a;
             let far = (h + d.sqrt()) / a;
-            
+
             if ray_t.surrounds(near) {
                 Some(Hit {
                     distance: near,
                     normal: self.normal(ray, near),
+                    hit_point: ray.point_at(near),
+                    material: self.material.clone(),
                 })
             } else if ray_t.surrounds(far) {
                 Some(Hit {
                     distance: far,
                     normal: self.normal(ray, far),
+                    hit_point: ray.point_at(far),
+                    material: self.material.clone(),
                 })
             } else {
                 None

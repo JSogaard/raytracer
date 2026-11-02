@@ -5,3 +5,5 @@ pub mod hittable;
 pub mod shapes;
 pub mod interval;
 pub mod scene;
+pub mod material;
+pub mod lambertian;

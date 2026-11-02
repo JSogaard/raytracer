@@ -8,7 +8,7 @@ use image::RgbImage;
 use rand::random;
 use rayon::iter::ParallelIterator;
 
-const MAX_DEPTH: i32 = 30;
+const MAX_DEPTH: i32 = 10;
 
 #[derive(Debug, Clone)]
 pub struct Camera {
@@ -105,10 +105,15 @@ fn ray_color(ray: &Ray, ray_t: Interval, scene: &Scene, depth: i32) -> Color {
     let hit = scene.hit(ray, ray_t);
 
     if let Some(hit) = hit {
-        let hit_point = ray.point_at(hit.distance);
-        let direction = hit.normal + Vec3::random_unit_vec();
-        let new_ray = Ray::new(hit_point, direction);
-        0.5 * ray_color(&new_ray, ray_t, scene, depth - 1)
+        // let hit_point = ray.point_at(hit.distance);
+        // let direction = hit.normal + Vec3::random_unit_vec();
+        // let new_ray = Ray::new(hit_point, direction);
+        let scatter = hit.material.scatter(ray, &hit);
+        if let Some(scatter) = scatter {
+            scatter.attenuation * ray_color(&scatter.ray, ray_t, scene, depth - 1)
+        } else {
+            Color::new(0.0, 0.0, 0.0)
+        }
     } else {
         let a = (&ray.direction().z() + 1.0) / 2.0;
         a * Color::new(0.5, 0.7, 1.) + (1. - a) * Color::new(1.0, 1.0, 1.0)
