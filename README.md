@@ -1,2 +1,2 @@
 # Tiny hobby ray tracer
-![Rendered image](image.png)
+![Rendered image](image_display.png)
