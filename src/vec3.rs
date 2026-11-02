@@ -1,6 +1,8 @@
 use image::Rgb;
 use rand::random;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::{
+    array::{self}, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 
 // Vector constants
 pub const UNIT_X: Vec3 = Vec3::new(1., 0., 0.);
@@ -73,27 +75,24 @@ impl Vec3 {
         Self::new(x, y, z)
     }
 
-    pub fn map(&self, func: impl FnMut(f64) -> f64) -> Self {
+    pub fn map(&self, func: impl Fn(f64) -> f64) -> Self {
         Self::from_array(self.coords().map(func))
     }
 
-    pub fn to_rgb(&self) -> Rgb<u8> {
-        let x = (self.x().clamp(0.0, 1.0) * 255.999) as u8;
-        let y = (self.y().clamp(0.0, 1.0) * 255.999) as u8;
-        let z = (self.z().clamp(0.0, 1.0) * 255.999) as u8;
+    pub fn operator(&self, other: &Self, func: impl Fn(f64, f64) -> f64) -> Self {
+        let coords: [f64; 3] = array::from_fn(|i| func(self.coords()[i], other.coords()[i]));
+        Self::from_array(coords)
+    }
 
-        Rgb([x, y, z])
+    pub fn to_rgb(&self) -> Rgb<u8> {
+        let coords: [u8; 3] = self.coords().map(|x| (x.clamp(0.0, 1.0) * 255.999) as u8);
+        Rgb(coords)
     }
 
     pub fn random_unit_vec() -> Vec3 {
         loop {
-            let x = random::<f64>() * 2.0 - 1.0;
-            let y = random::<f64>() * 2.0 - 1.0;
-            let z = random::<f64>() * 2.0 - 1.0;
-
-            let vec = Vec3::new(x, y, z);
+            let vec = Vec3::from_array(array::from_fn(|_| random::<f64>() * 2.0 - 1.0));
             let len_sq = vec.length_squared();
-
             if len_sq > 1e-160 && len_sq <= 1.0 {
                 return vec / len_sq.sqrt();
             }

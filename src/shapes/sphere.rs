@@ -23,8 +23,7 @@ impl Sphere {
         }
     }
 
-    fn normal(&self, ray: &Ray, distance: f64) -> Vec3 {
-        let intercept: Point = ray.point_at(distance);
+    fn normal(&self, ray: &Ray, intercept: Point) -> Vec3 {
         let normal = (intercept - self.center) / self.radius;
         if ray.direction().dot(normal) <= 0.0 {
             normal
@@ -51,17 +50,19 @@ impl Hittable for Sphere {
             let far = (h + d.sqrt()) / a;
 
             if ray_t.surrounds(near) {
+                let intercept: Point = ray.point_at(near);
                 Some(Hit {
                     distance: near,
-                    normal: self.normal(ray, near),
+                    normal: self.normal(ray, intercept),
                     hit_point: ray.point_at(near),
                     material: self.material.clone(),
                 })
             } else if ray_t.surrounds(far) {
+                let intercept: Point = ray.point_at(far);
                 Some(Hit {
                     distance: far,
-                    normal: self.normal(ray, far),
-                    hit_point: ray.point_at(far),
+                    normal: self.normal(ray, intercept),
+                    hit_point: intercept,
                     material: self.material.clone(),
                 })
             } else {
