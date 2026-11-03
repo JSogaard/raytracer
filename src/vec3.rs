@@ -103,6 +103,11 @@ impl Vec3 {
         const LIMIT: f64 = 1e-8;
         self.x().abs() < LIMIT && self.y().abs() < LIMIT && self.z().abs() < LIMIT
     }
+
+    pub fn reflect(&self, normal: Self) -> Self {
+        let scaled_normal = -self.dot(normal) * normal;
+        *self + 2.0 * scaled_normal
+    }
 }
 
 impl Add for Vec3 {

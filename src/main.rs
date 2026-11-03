@@ -2,13 +2,7 @@ use std::{sync::Arc, time::Instant};
 
 use anyhow::Result;
 use raytracer::{
-    camera::Camera,
-    interval::Interval,
-    lambertian::Lambertian,
-    scene::Scene,
-    shape::Shape,
-    shapes::sphere::Sphere,
-    vec3::{Color, Point, Vec3},
+    camera::Camera, interval::Interval, material::Lambertian, scene::Scene, shape::Shape, shapes::sphere::Sphere, vec3::{Color, Point, Vec3},
 };
 
 fn main() -> Result<()> {

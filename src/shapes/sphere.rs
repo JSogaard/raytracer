@@ -7,7 +7,7 @@ use crate::{
 };
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone)] 
 pub struct Sphere {
     center: Point,
     radius: f64,
