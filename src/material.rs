@@ -1,3 +1,4 @@
+use core::panic;
 use std::fmt::Debug;
 
 use crate::{
@@ -45,21 +46,27 @@ impl Material for Lambertian {
 #[derive(Debug, Clone)]
 pub struct Metal {
     albedo: Color,
+    fuzz: f64,
 }
 
 impl Metal {
-    pub fn new(albedo: Color) -> Self {
-        Self { albedo }
+    pub fn new(albedo: Color, fuzz: f64) -> Self {
+        if fuzz >= 1.0 {
+            panic!("Fuzziness factor has to be less than 1.0");
+        }
+        Self { albedo, fuzz }
     }
 }
 
 impl Material for Metal {
     fn scatter(&self, ray_in: &Ray, hit: &Hit) -> Option<Scatter> {
-        let direction = ray_in.direction().reflect(hit.normal);
+        let mut direction =
+            ray_in.direction().reflect(hit.normal);
         if direction.dot(hit.normal) < 0.0 {
-            return None
+            return None;
         }
-        let ray = Ray::new(hit.hit_point, direction);
+        direction += Vec3::random_unit_vec() * self.fuzz;
+        let ray = Ray::new(hit.hit_point, direction.normalize());
         Some(Scatter {
             ray,
             attenuation: self.albedo,
