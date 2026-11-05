@@ -18,8 +18,6 @@ pub struct Camera {
     pixel_delta_x: Vec3,
     pixel_delta_y: Vec3,
     top_left: Point,
-    samples_pr_pixel: u32,
-    pixel_sample_scale: f64,
 }
 
 impl Camera {
@@ -30,7 +28,6 @@ impl Camera {
         center: Point,
         direction: Vec3,
         up_direction: Vec3,
-        samples_pr_pixel: u32,
     ) -> Self {
         let vfov = vfov.to_radians();
         let pixel_width = (pixel_height as f64 * aspect_ratio) as u32;
@@ -51,11 +48,7 @@ impl Camera {
         let pixel_delta_y = -up_direction * viewport_height / pixel_height as f64;
 
         let top_left = center + direction - viewport_width / 2. * pixel_delta_x.normalize()
-            + viewport_height / 2. * up_direction
-            + pixel_delta_x / 2.
-            + pixel_delta_y / 2.;
-
-        let pixel_sample_scale = 1.0 / samples_pr_pixel as f64;
+            + viewport_height / 2. * up_direction;
 
         Self {
             pixel_width,
@@ -64,33 +57,45 @@ impl Camera {
             pixel_delta_x,
             pixel_delta_y,
             top_left,
-            samples_pr_pixel,
-            pixel_sample_scale,
         }
     }
 
-    pub fn render(&self, scene: &Scene, ray_t: Interval) -> RgbImage {
+    pub fn render(&self, scene: &Scene, ray_t: Interval, samples_pr_pixel: u32) -> RgbImage {
+        if samples_pr_pixel < 1 {
+            panic!("Samples pr. pixel cannot be less than 1.")
+        }
+
         let mut image: RgbImage = RgbImage::new(self.pixel_width, self.pixel_height);
 
+        let sample_axis = (samples_pr_pixel as f64).sqrt() as u32;
+        let sample_scale = 1.0 / (sample_axis * sample_axis) as f64;
+        let cell_scale = 1.0 / sample_axis as f64;
+        let cell_delta_x = self.pixel_delta_x * cell_scale;
+        let cell_delta_y = self.pixel_delta_y * cell_scale;
+
         image.par_enumerate_pixels_mut().for_each(|(x, y, pixel)| {
-            let pixel_vec =
+            let pixel_corner =
                 self.top_left + x as f64 * self.pixel_delta_x + y as f64 * self.pixel_delta_y;
-            let pixel_dir = pixel_vec - self.center;
+            let pixel_dir = pixel_corner - self.center;
 
             let mut color = Color::new(0.0, 0.0, 0.0);
 
-            for _ in 0..self.samples_pr_pixel {
-                let ray_dir: Vec3 = pixel_dir
-                    + (random::<f64>() - 0.5) * self.pixel_delta_x
-                    + (random::<f64>() - 0.5) * self.pixel_delta_y;
-                let ray = Ray::new(self.center, ray_dir);
-                color += ray_color(&ray, ray_t, scene, MAX_DEPTH);
+            for i in 0..sample_axis {
+                for j in 0..sample_axis {
+                    let ray_dir = pixel_dir
+                        + (i as f64 + random::<f64>()) * cell_delta_x
+                        + (j as f64 + random::<f64>()) * cell_delta_y;
+                    let ray = Ray::new(self.center, ray_dir);
+                    color += ray_color(&ray, ray_t, scene, MAX_DEPTH);
+                }
             }
 
-            color *= self.pixel_sample_scale;
+            color *= sample_scale;
 
-            // Clamp and sqrt are conversion from linear to gamma
-            *pixel = color.map(|x| x.max(0.0).sqrt()).to_rgb();
+            // Convert from linear space to gamma space
+            let linear_to_gamma = |x: f64| x.max(0.0).sqrt();
+
+            *pixel = color.map(linear_to_gamma).to_rgb();
         });
 
         image
