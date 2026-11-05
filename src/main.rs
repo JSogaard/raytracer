@@ -2,23 +2,37 @@ use std::{sync::Arc, time::Instant};
 
 use anyhow::Result;
 use raytracer::{
-    camera::Camera, interval::Interval, material::{Lambertian, Metal}, scene::Scene, shape::Shape, shapes::sphere::Sphere, vec3::{Color, Point, Vec3},
+    camera::Camera,
+    interval::Interval,
+    material::{Lambertian, Metal, Refractive},
+    scene::Scene,
+    shape::Shape,
+    vec3::{Color, Point, Vec3},
 };
+use raytracer::shapes::sphere::Sphere;
 
 fn main() -> Result<()> {
     let mut scene = Scene::default();
 
-    let blue_diffuse = Arc::new(Lambertian::new(Color::new(0.1, 0.15, 0.4)));
+    let glass = Arc::new(Refractive::new(1.5));
     let green_diffuse = Arc::new(Lambertian::new(Color::new(0.16, 0.3, 0.12)));
-    let metal = Arc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.05));
+    let blue_diffuse = Arc::new(Lambertian::new(Color::new(0.16, 0.08, 0.45)));
+    let red_diffuse = Arc::new(Lambertian::new(Color::new(0.5, 0.04, 0.05)));
+    let metal = Arc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.2));
 
-    let sphere = Sphere::new(Point::new(3.0, 0.0, 0.0), 1.0, blue_diffuse.clone());
+    let sphere = Sphere::new(Point::new(3.0, 0.0, 0.0), 1.0, glass.clone());
     scene.add_shape(Shape::Sphere(sphere));
 
-    let sphere = Sphere::new(Point::new(1.5, 0.0, -2000.0), 1999.0, metal.clone());
+    let sphere = Sphere::new(Point::new(1.5, 0.0, -2000.0), 1999.0, green_diffuse.clone());
     scene.add_shape(Shape::Sphere(sphere));
 
-    let sphere = Sphere::new(Point::new(3.0, 2000.0, 0.0), -1999.0, green_diffuse.clone());
+    let sphere = Sphere::new(Point::new(5.0, 1.2, 0.0), 1.0, blue_diffuse.clone());
+    scene.add_shape(Shape::Sphere(sphere));
+
+    let sphere = Sphere::new(Point::new(5.0, -1.2, 0.0), 1.0, metal.clone());
+    scene.add_shape(Shape::Sphere(sphere));
+
+    let sphere = Sphere::new(Point::new(5.0, 0.0, 1.2), 1.0, red_diffuse.clone());
     scene.add_shape(Shape::Sphere(sphere));
 
     let camera = Camera::new(
@@ -39,7 +53,7 @@ fn main() -> Result<()> {
 
     println!("{:?}", start.elapsed());
 
-    image.save("image.png")?;
+    image.save("./image.png")?;
 
     Ok(())
 }

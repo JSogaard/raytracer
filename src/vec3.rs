@@ -108,6 +108,13 @@ impl Vec3 {
         let scaled_normal = -self.dot(normal) * normal;
         *self + 2.0 * scaled_normal
     }
+
+    pub fn refract(&self, normal: Self, refract_ratio: f64) -> Self {
+        let perpendicular = refract_ratio * (*self + (-self.dot(normal) * normal));
+        let perp_length = perpendicular.length();
+        let parallel = -(1.0 - perp_length * perp_length).sqrt() * normal;
+        perpendicular + parallel
+    }
 }
 
 impl Add for Vec3 {

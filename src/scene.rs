@@ -16,7 +16,7 @@ impl Scene {
         self.shapes.push(shape);
     }
 
-    pub fn hit_shapes(&self, ray: &Ray, ray_t: Interval) -> Option<Hit> {
+    pub fn hit_shapes(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
         let mut closest = ray_t.max();
         let mut closest_hit = None;
 

@@ -23,7 +23,7 @@ impl Sphere {
         }
     }
 
-    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit> {
+    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
         let orig = ray.origin();
         let dir = ray.direction();
 
@@ -38,34 +38,32 @@ impl Sphere {
             let near = (h - d.sqrt()) / a;
             let far = (h + d.sqrt()) / a;
 
-            if ray_t.surrounds(near) {
-                let intercept: Point = ray.point_at(near);
-                Some(Hit {
-                    distance: near,
-                    normal: self.normal(ray, intercept),
-                    hit_point: ray.point_at(near),
-                    material: self.material.clone(),
-                })
+            let t = if ray_t.surrounds(near) {
+                near
             } else if ray_t.surrounds(far) {
-                let intercept: Point = ray.point_at(far);
-                Some(Hit {
-                    distance: far,
-                    normal: self.normal(ray, intercept),
-                    hit_point: intercept,
-                    material: self.material.clone(),
-                })
+                far
             } else {
-                None
-            }
+                return None;
+            };
+
+            let hit_point: Point = ray.point_at(t);
+            let (normal, front_face) = self.normal(ray, hit_point);
+            Some(Hit {
+                distance: t,
+                normal,
+                hit_point,
+                material: self.material.as_ref(),
+                front_face,
+            })
         }
     }
 
-    fn normal(&self, ray: &Ray, intercept: Point) -> Vec3 {
+    fn normal(&self, ray: &Ray, intercept: Point) -> (Vec3, bool) {
         let normal = (intercept - self.center) / self.radius;
         if ray.direction().dot(normal) <= 0.0 {
-            normal
+            (normal, true)
         } else {
-            -normal
+            (-normal, false)
         }
     }
 }
