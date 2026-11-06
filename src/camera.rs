@@ -17,6 +17,8 @@ pub struct Camera {
     pixel_delta_x: Vec3,
     pixel_delta_y: Vec3,
     top_left: Point,
+    focus_dist: f64,
+    aperture_angle: f64,
 }
 
 impl Camera {
@@ -27,10 +29,16 @@ impl Camera {
         center: Point,
         direction: Vec3,
         up_direction: Vec3,
+        focus_dist: f64,
+        aperture_angle: f64,
     ) -> Self {
+        if vfov <= 0.0 || focus_dist <= 0.0 {
+            panic!("Focus distance and vertical fov must be positive and non-zero.")
+        }
+
         let vfov = vfov.to_radians();
         let pixel_width = (pixel_height as f64 * aspect_ratio) as u32;
-        let viewport_height = 2.0 * (vfov / 2.0).tan();
+        let viewport_height = 2.0 * focus_dist * (vfov / 2.0).tan();
         let viewport_width = viewport_height * (pixel_width as f64 / pixel_height as f64);
 
         let direction = direction.normalize();
@@ -41,7 +49,8 @@ impl Camera {
 
         let pixel_delta_y = -up_direction * viewport_height / pixel_height as f64;
 
-        let top_left = center + direction - viewport_width / 2. * pixel_delta_x.normalize()
+        let top_left = center + focus_dist * direction
+            - viewport_width / 2. * pixel_delta_x.normalize()
             + viewport_height / 2. * up_direction;
 
         Self {
@@ -51,6 +60,8 @@ impl Camera {
             pixel_delta_x,
             pixel_delta_y,
             top_left,
+            focus_dist,
+            aperture_angle: aperture_angle.to_radians(),
         }
     }
 
@@ -61,6 +72,10 @@ impl Camera {
 
         let mut image: RgbImage = RgbImage::new(self.pixel_width, self.pixel_height);
 
+        let aperture = (self.aperture_angle / 2.0).tan() * self.focus_dist;
+        let ap_x = self.pixel_delta_x.normalize() * aperture;
+        let ap_y = self.pixel_delta_y.normalize() * aperture;
+
         let sample_axis = (samples_pr_pixel as f64).sqrt() as u32;
         let sample_scale = 1.0 / (sample_axis * sample_axis) as f64;
         let cell_scale = 1.0 / sample_axis as f64;
@@ -70,16 +85,19 @@ impl Camera {
         image.par_enumerate_pixels_mut().for_each(|(x, y, pixel)| {
             let pixel_corner =
                 self.top_left + x as f64 * self.pixel_delta_x + y as f64 * self.pixel_delta_y;
-            let pixel_dir = pixel_corner - self.center;
 
             let mut color = Color::new(0.0, 0.0, 0.0);
 
             for i in 0..sample_axis {
                 for j in 0..sample_axis {
-                    let ray_dir = pixel_dir
+                    let ap_offset = Vec3::random_on_unit_disk();
+                    let orig = self.center + ap_x * ap_offset.x() + ap_y * ap_offset.y();
+
+                    let ray_dir = (pixel_corner - orig)
                         + (i as f64 + fastrand::f64()) * cell_delta_x
                         + (j as f64 + fastrand::f64()) * cell_delta_y;
-                    let ray = Ray::new(self.center, ray_dir);
+
+                    let ray = Ray::new(orig, ray_dir);
                     color += ray_color(&ray, ray_t, scene, MAX_DEPTH);
                 }
             }

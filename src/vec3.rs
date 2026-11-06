@@ -1,6 +1,7 @@
 use image::Rgb;
 use std::{
-    array::{self}, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    array::{self},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 // Vector constants
@@ -94,6 +95,19 @@ impl Vec3 {
             let len_sq = vec.length_squared();
             if len_sq > 1e-160 && len_sq <= 1.0 {
                 return vec / len_sq.sqrt();
+            }
+        }
+    }
+
+    pub fn random_on_unit_disk() -> Vec3 {
+        loop {
+            let vec = Vec3::new(
+                fastrand::f64() * 2.0 - 1.0,
+                fastrand::f64() * 2.0 - 1.0,
+                0.0,
+            );
+            if vec.length_squared() < 1.0 {
+                return vec;
             }
         }
     }

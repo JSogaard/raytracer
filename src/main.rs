@@ -39,16 +39,18 @@ fn main() -> Result<()> {
         1.0,
         1080,
         60.0,
-        Point::new(0.0, 0.0, 0.0),
-        Vec3::new(1.0, 0.0, 0.0),
+        Point::new(0.0, 0.0, 3.0),
+        Vec3::new(0.8, 0.0, -0.5),
         Vec3::new(0.0, 0.0, 1.0),
+        4.0,
+        0.5,
     );
 
     let ray_t = Interval::new(0.001, f64::INFINITY);
 
     let start = Instant::now();
 
-    let image = camera.render(&scene, ray_t, 10);
+    let image = camera.render(&scene, ray_t, 144);
 
     println!("{:?}", start.elapsed());
 
