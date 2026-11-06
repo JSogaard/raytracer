@@ -34,12 +34,7 @@ impl Camera {
         let viewport_width = viewport_height * (pixel_width as f64 / pixel_height as f64);
 
         let direction = direction.normalize();
-        let up_direction = up_direction.normalize();
-
-        assert!(
-            direction.dot(up_direction).abs() < 1e-10,
-            "Camera direction and up-direction are not perpendicular"
-        );
+        let up_direction = (up_direction - up_direction.dot(direction) * direction).normalize();
 
         let pixel_delta_x =
             (direction.cross(up_direction)).normalize() * viewport_width / pixel_width as f64;

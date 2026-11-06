@@ -38,7 +38,7 @@ fn main() -> Result<()> {
     let camera = Camera::new(
         1.0,
         1080,
-        50.0,
+        60.0,
         Point::new(0.0, 0.0, 0.0),
         Vec3::new(1.0, 0.0, 0.0),
         Vec3::new(0.0, 0.0, 1.0),
