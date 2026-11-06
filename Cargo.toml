@@ -8,3 +8,8 @@ anyhow = "1.0.104"
 fastrand = "2.5.0"
 image = { version = "0.25.10", features = ["rayon"] }
 rayon = "1.12.0"
+
+[profile.quick-debug]
+inherits = "release"
+opt-level = 1
+debug = 2

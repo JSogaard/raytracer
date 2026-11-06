@@ -4,7 +4,6 @@ pub mod vec3;
 pub mod ray;
 pub mod camera;
 pub mod shape;
-pub mod shapes;
 pub mod interval;
 pub mod scene;
 pub mod material;

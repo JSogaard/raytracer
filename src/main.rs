@@ -9,7 +9,7 @@ use raytracer::{
     shape::Shape,
     vec3::{Color, Point, Vec3},
 };
-use raytracer::shapes::sphere::Sphere;
+use raytracer::shape::Sphere;
 
 fn main() -> Result<()> {
     let mut scene = Scene::default();
