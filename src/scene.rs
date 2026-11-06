@@ -1,8 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     interval::Interval, ray::Ray, shape::{Hit, Shape},
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Scene {
     shapes: Vec<Shape>,
 }

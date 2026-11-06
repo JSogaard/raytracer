@@ -1,4 +1,5 @@
 use image::Rgb;
+use serde::{Deserialize, Serialize};
 use std::{
     array::{self},
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -10,7 +11,7 @@ pub const UNIT_Y: Vec3 = Vec3::new(0., 1., 0.);
 pub const UNIT_Z: Vec3 = Vec3::new(0., 0., 1.);
 pub const ZERO_VEC: Vec3 = Vec3::new(0., 0., 0.);
 
-#[derive(Copy, Clone, Default, PartialEq, Debug)]
+#[derive(Copy, Clone, Default, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Vec3 {
     c: [f64; 3],
 }
@@ -89,9 +90,14 @@ impl Vec3 {
         Rgb(coords)
     }
 
+    pub fn random() -> Self {
+        let coords: [f64; 3] = array::from_fn(|_| fastrand::f64());
+        Self::from_array(coords)
+    }
+
     pub fn random_unit_vec() -> Vec3 {
         loop {
-            let vec = Vec3::from_array(array::from_fn(|_| fastrand::f64() * 2.0 - 1.0));
+            let vec = Self::from_array(array::from_fn(|_| fastrand::f64() * 2.0 - 1.0));
             let len_sq = vec.length_squared();
             if len_sq > 1e-160 && len_sq <= 1.0 {
                 return vec / len_sq.sqrt();

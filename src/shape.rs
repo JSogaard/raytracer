@@ -1,9 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::vec3::Point;
 use crate::{interval::Interval, material::Material, ray::Ray, vec3::Vec3};
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Shape {
     Sphere(Sphere),
 }
@@ -16,23 +18,26 @@ impl Shape {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Hit<'a> {
     pub distance: f64,
     pub normal: Vec3,
     pub hit_point: Point,
-    pub material: &'a dyn Material,
+    pub material: &'a Material,
     pub front_face: bool,
 }
 
-#[derive(Debug, Clone)]
+//------------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sphere {
     center: Point,
     radius: f64,
-    material: Arc<dyn Material>,
+    material: Arc<Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f64, material: Arc<dyn Material>) -> Self {
+    pub fn new(center: Point, radius: f64, material: Arc<Material>) -> Self {
         Self {
             center,
             radius,

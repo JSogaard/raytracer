@@ -5,7 +5,8 @@ use crate::{
     vec3::{Color, Point, Vec3},
 };
 use image::RgbImage;
-use rayon::iter::ParallelIterator;
+use indicatif::{ProgressBar, ProgressStyle};
+use rayon::iter::{IndexedParallelIterator, ParallelIterator};
 
 const MAX_DEPTH: i32 = 10;
 
@@ -70,6 +71,12 @@ impl Camera {
             panic!("Samples pr. pixel cannot be less than 1.")
         }
 
+        let pb = ProgressBar::new(self.pixel_width as u64 * self.pixel_height as u64);
+        pb.set_style(
+            ProgressStyle::with_template("{elapsed_precise} {wide_bar} {pos}/{len}").unwrap(),
+        );
+        const BATCH_SIZE: usize = 4096;
+
         let mut image: RgbImage = RgbImage::new(self.pixel_width, self.pixel_height);
 
         let aperture = (self.aperture_angle / 2.0).tan() * self.focus_dist;
@@ -82,33 +89,41 @@ impl Camera {
         let cell_delta_x = self.pixel_delta_x * cell_scale;
         let cell_delta_y = self.pixel_delta_y * cell_scale;
 
-        image.par_enumerate_pixels_mut().for_each(|(x, y, pixel)| {
-            let pixel_corner =
-                self.top_left + x as f64 * self.pixel_delta_x + y as f64 * self.pixel_delta_y;
+        image
+            .par_enumerate_pixels_mut()
+            .enumerate()
+            .for_each(|(i, (x, y, pixel))| {
+                let pixel_corner =
+                    self.top_left + x as f64 * self.pixel_delta_x + y as f64 * self.pixel_delta_y;
 
-            let mut color = Color::new(0.0, 0.0, 0.0);
+                let mut color = Color::new(0.0, 0.0, 0.0);
 
-            for i in 0..sample_axis {
-                for j in 0..sample_axis {
-                    let ap_offset = Vec3::random_on_unit_disk();
-                    let orig = self.center + ap_x * ap_offset.x() + ap_y * ap_offset.y();
+                for i in 0..sample_axis {
+                    for j in 0..sample_axis {
+                        let ap_offset = Vec3::random_on_unit_disk();
+                        let orig = self.center + ap_x * ap_offset.x() + ap_y * ap_offset.y();
 
-                    let ray_dir = (pixel_corner - orig)
-                        + (i as f64 + fastrand::f64()) * cell_delta_x
-                        + (j as f64 + fastrand::f64()) * cell_delta_y;
+                        let ray_dir = (pixel_corner - orig)
+                            + (i as f64 + fastrand::f64()) * cell_delta_x
+                            + (j as f64 + fastrand::f64()) * cell_delta_y;
 
-                    let ray = Ray::new(orig, ray_dir);
-                    color += ray_color(&ray, ray_t, scene, MAX_DEPTH);
+                        let ray = Ray::new(orig, ray_dir);
+                        color += ray_color(&ray, ray_t, scene, MAX_DEPTH);
+                    }
                 }
-            }
 
-            color *= sample_scale;
+                color *= sample_scale;
 
-            // Convert from linear space to gamma space
-            let linear_to_gamma = |x: f64| x.max(0.0).sqrt();
+                // Convert from linear space to gamma space
+                let linear_to_gamma = |x: f64| x.max(0.0).sqrt();
 
-            *pixel = color.map(linear_to_gamma).to_rgb();
-        });
+                *pixel = color.map(linear_to_gamma).to_rgb();
+                if (i + 1) % BATCH_SIZE == 0 {
+                    pb.inc(BATCH_SIZE as u64);
+                }
+            });
+
+        pb.finish_and_clear();
 
         image
     }

@@ -1,23 +1,41 @@
 use core::panic;
 use std::fmt::Debug;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     ray::Ray,
     shape::Hit,
     vec3::{Color, Vec3},
 };
 
-pub trait Material: Send + Sync + Debug {
-    fn scatter(&self, ray_in: &Ray, hit: &Hit) -> Option<Scatter>;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Material {
+    Lambertian(Lambertian),
+    Metal(Metal),
+    Refractive(Refractive),
 }
 
+impl Material {
+    pub fn scatter(&self, ray_in: &Ray, hit: &Hit) -> Option<Scatter> {
+        match self {
+            Self::Lambertian(mat) => mat.scatter(ray_in, hit),
+            Self::Metal(mat) => mat.scatter(ray_in, hit),
+            Self::Refractive(mat) => mat.scatter(ray_in, hit),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Scatter {
     pub ray: Ray,
     pub attenuation: Color,
 }
 
+//------------------------------------------------------------------------------
+
 /// Lambertian diffuse material
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Lambertian {
     albedo: Color,
 }
@@ -28,7 +46,7 @@ impl Lambertian {
     }
 }
 
-impl Material for Lambertian {
+impl Lambertian {
     fn scatter(&self, _ray_in: &Ray, hit: &Hit) -> Option<Scatter> {
         let mut direction = hit.normal + Vec3::random_unit_vec();
         if direction.near_zero() {
@@ -42,8 +60,10 @@ impl Material for Lambertian {
     }
 }
 
+//------------------------------------------------------------------------------
+
 /// Polished metal material
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Metal {
     albedo: Color,
     fuzz: f64,
@@ -58,7 +78,7 @@ impl Metal {
     }
 }
 
-impl Material for Metal {
+impl Metal {
     fn scatter(&self, ray_in: &Ray, hit: &Hit) -> Option<Scatter> {
         let mut direction = ray_in.direction().reflect(hit.normal);
         if direction.dot(hit.normal) < 0.0 {
@@ -73,7 +93,9 @@ impl Material for Metal {
     }
 }
 
-#[derive(Debug, Clone)]
+//------------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Refractive {
     refract_ratio: f64,
 }
@@ -84,7 +106,7 @@ impl Refractive {
     }
 }
 
-impl Material for Refractive {
+impl Refractive {
     fn scatter(&self, ray_in: &Ray, hit: &Hit) -> Option<Scatter> {
         let refract_ratio = if hit.front_face {
             1.0 / self.refract_ratio

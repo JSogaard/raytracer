@@ -5,20 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Quick debug 'raytracer'",
-            "type": "lldb",
-            "request": "launch",
-            "cargo": {
-                "args": [
-                    "run",
-                    "--bin=raytracer",
-                    "--quick-debug"
-                ]
-            },
-            "args": []
-        },
-        
-        {
             "name": "Debug executable 'raytracer'",
             "type": "lldb",
             "request": "launch",
