@@ -96,7 +96,7 @@ impl Material for Refractive {
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
         let cannot_refract = refract_ratio * sin_theta > 1.0;
 
-        let new_dir = if cannot_refract || reflectance(refract_ratio, cos_theta) > rand::random() {
+        let new_dir = if cannot_refract || reflectance(refract_ratio, cos_theta) > fastrand::f64() {
             ray_in.direction().reflect(hit.normal)
         } else {
             ray_in.direction().refract(hit.normal, refract_ratio)

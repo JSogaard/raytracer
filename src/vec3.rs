@@ -1,5 +1,4 @@
 use image::Rgb;
-use rand::random;
 use std::{
     array::{self}, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -91,7 +90,7 @@ impl Vec3 {
 
     pub fn random_unit_vec() -> Vec3 {
         loop {
-            let vec = Vec3::from_array(array::from_fn(|_| random::<f64>() * 2.0 - 1.0));
+            let vec = Vec3::from_array(array::from_fn(|_| fastrand::f64() * 2.0 - 1.0));
             let len_sq = vec.length_squared();
             if len_sq > 1e-160 && len_sq <= 1.0 {
                 return vec / len_sq.sqrt();

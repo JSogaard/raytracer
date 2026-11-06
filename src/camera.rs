@@ -5,7 +5,6 @@ use crate::{
     vec3::{Color, Point, Vec3},
 };
 use image::RgbImage;
-use rand::random;
 use rayon::iter::ParallelIterator;
 
 const MAX_DEPTH: i32 = 10;
@@ -83,8 +82,8 @@ impl Camera {
             for i in 0..sample_axis {
                 for j in 0..sample_axis {
                     let ray_dir = pixel_dir
-                        + (i as f64 + random::<f64>()) * cell_delta_x
-                        + (j as f64 + random::<f64>()) * cell_delta_y;
+                        + (i as f64 + fastrand::f64()) * cell_delta_x
+                        + (j as f64 + fastrand::f64()) * cell_delta_y;
                     let ray = Ray::new(self.center, ray_dir);
                     color += ray_color(&ray, ray_t, scene, MAX_DEPTH);
                 }
