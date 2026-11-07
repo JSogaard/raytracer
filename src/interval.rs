@@ -35,6 +35,12 @@ impl Interval {
     pub fn clamp(&self, x: f64) -> f64 {
         x.clamp(self.min, self.max)
     }
+
+    pub fn overlap(&self, second: &Self, third: &Self) -> bool {
+        let min = self.min.max(second.min.max(third.min));
+        let max = self.max.min(second.max.min(third.max));
+        min < max
+    }
 }
 
 impl Default for Interval {

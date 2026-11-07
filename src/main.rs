@@ -1,11 +1,11 @@
 use std::fs;
-use std::{sync::Arc, time::Instant};
-
+use std::sync::Arc;
 use anyhow::Result;
+use raytracer::camera::CameraConfig;
+use raytracer::interval::Interval;
 use raytracer::shape::Sphere;
 use raytracer::{
     camera::Camera,
-    interval::Interval,
     material::{Lambertian, Material, Metal, Refractive},
     scene::Scene,
     shape::Shape,
@@ -56,20 +56,22 @@ fn main() -> Result<()> {
         fs::write("scene.json", scene_json)?;
     }
 
-    let camera = Camera::new(
-        1.0,
-        1080,
-        60.0,
-        Point::new(0.0, 0.0, 3.0),
-        Vec3::new(1.0, 0.75, -0.6),
-        Vec3::new(0.0, 0.0, 1.0),
-        3.5,
-        0.6,
-    );
+    let config = CameraConfig {
+        aspect_ratio: 1.0,
+        pixel_height: 1080,
+        vfov: 60.0,
+        center: Point::new(0.0, 0.0, 3.0),
+        direction: Vec3::new(1.0, 0.75, -0.6),
+        up_direction: Vec3::new(0.0, 0.0, 1.0),
+        focus_dist: 4.0,
+        aperture_angle: 0.6,
+    };
+
+    let camera = Camera::new(config);
 
     let ray_t = Interval::new(0.001, f64::INFINITY);
 
-    let start = Instant::now();
+    let start = std::time::Instant::now();
 
     let image = camera.render(&scene, ray_t, 10);
 

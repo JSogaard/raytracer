@@ -22,47 +22,50 @@ pub struct Camera {
     aperture_angle: f64,
 }
 
+pub struct CameraConfig {
+    pub aspect_ratio: f64,
+    pub pixel_height: u32,
+    pub vfov: f64,
+    pub center: Point,
+    pub direction: Vec3,
+    pub up_direction: Vec3,
+    pub focus_dist: f64,
+    pub aperture_angle: f64,
+}
+
 impl Camera {
-    pub fn new(
-        aspect_ratio: f64,
-        pixel_height: u32,
-        vfov: f64,
-        center: Point,
-        direction: Vec3,
-        up_direction: Vec3,
-        focus_dist: f64,
-        aperture_angle: f64,
-    ) -> Self {
-        if vfov <= 0.0 || focus_dist <= 0.0 {
+    pub fn new(config: CameraConfig) -> Self {
+        if config.vfov <= 0.0 || config.focus_dist <= 0.0 {
             panic!("Focus distance and vertical fov must be positive and non-zero.")
         }
 
-        let vfov = vfov.to_radians();
-        let pixel_width = (pixel_height as f64 * aspect_ratio) as u32;
-        let viewport_height = 2.0 * focus_dist * (vfov / 2.0).tan();
-        let viewport_width = viewport_height * (pixel_width as f64 / pixel_height as f64);
+        let vfov = config.vfov.to_radians();
+        let pixel_width = (config.pixel_height as f64 * config.aspect_ratio) as u32;
+        let viewport_height = 2.0 * config.focus_dist * (vfov / 2.0).tan();
+        let viewport_width = viewport_height * (pixel_width as f64 / config.pixel_height as f64);
 
-        let direction = direction.normalize();
-        let up_direction = (up_direction - up_direction.dot(direction) * direction).normalize();
+        let direction = config.direction.normalize();
+        let up_direction =
+            (config.up_direction - config.up_direction.dot(direction) * direction).normalize();
 
         let pixel_delta_x =
             (direction.cross(up_direction)).normalize() * viewport_width / pixel_width as f64;
 
-        let pixel_delta_y = -up_direction * viewport_height / pixel_height as f64;
+        let pixel_delta_y = -up_direction * viewport_height / config.pixel_height as f64;
 
-        let top_left = center + focus_dist * direction
+        let top_left = config.center + config.focus_dist * direction
             - viewport_width / 2. * pixel_delta_x.normalize()
             + viewport_height / 2. * up_direction;
 
         Self {
             pixel_width,
-            pixel_height,
-            center,
+            pixel_height: config.pixel_height,
+            center: config.center,
             pixel_delta_x,
             pixel_delta_y,
             top_left,
-            focus_dist,
-            aperture_angle: aperture_angle.to_radians(),
+            focus_dist: config.focus_dist,
+            aperture_angle: config.aperture_angle.to_radians(),
         }
     }
 
