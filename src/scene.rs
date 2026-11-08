@@ -24,7 +24,7 @@ impl Scene {
     }
 
     pub fn build_tree(&mut self) {
-        self.tree = Some(AabbNode::new(self.shapes.clone()));
+        self.tree = Some(AabbNode::new(self.shapes.clone(), MAX_DEPTH));
     }
 
     pub fn hit_shapes(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
@@ -42,6 +42,8 @@ impl Scene {
 //------------------------------------------------------------------------------
 
 const EPSILON: f64 = 0.0001;
+const MIN_LEAF_SIZE: usize = 4;
+const MAX_DEPTH: usize = 64;
 
 #[derive(Clone, Debug, Default)]
 struct AabbNode {
@@ -50,31 +52,30 @@ struct AabbNode {
     zs: Interval,
     left: Option<Box<Self>>,
     right: Option<Box<Self>>,
-    shape: Option<Arc<Shape>>,
+    shapes: Vec<Arc<Shape>>,
 }
 
 impl AabbNode {
-    fn new(mut shapes: Vec<Arc<Shape>>) -> Self {
+    fn new(mut shapes: Vec<Arc<Shape>>, depth: usize) -> Self {
         assert!(
             !shapes.is_empty(),
             "AABB tree cannot be constructed from an empty vector"
         );
 
-        if shapes.len() == 1 {
-            let shape = shapes[0].clone();
-            return Self {
-                xs: shape.xs(),
-                ys: shape.ys(),
-                zs: shape.zs(),
-                left: None,
-                right: None,
-                shape: Some(shape),
-            };
-        }
-
         let mut xs = find_bounding(&shapes, |a| a.xs());
         let mut ys = find_bounding(&shapes, |a| a.ys());
         let mut zs = find_bounding(&shapes, |a| a.zs());
+
+        if shapes.len() <= MIN_LEAF_SIZE || depth == 0 {
+            return Self {
+                xs,
+                ys,
+                zs,
+                left: None,
+                right: None,
+                shapes,
+            };
+        }
 
         let [x_span, y_span, z_span] = [xs, ys, zs].map(|a| a.span());
 
@@ -90,9 +91,6 @@ impl AabbNode {
 
         let right_shapes = shapes.split_off(shapes.len() / 2);
 
-        let left_node = Self::new(shapes);
-        let right_node = Self::new(right_shapes);
-
         if xs.span() < EPSILON {
             xs = xs.expand(EPSILON / 2.0);
         }
@@ -103,19 +101,26 @@ impl AabbNode {
             zs = zs.expand(EPSILON / 2.0);
         }
 
+        let left_node = Self::new(shapes, depth - 1);
+        let right_node = Self::new(right_shapes, depth - 1);
+
         Self {
             xs,
             ys,
             zs,
             left: Some(Box::new(left_node)),
             right: Some(Box::new(right_node)),
-            shape: None,
+            shapes: Vec::new(),
         }
     }
 
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
-        if let Some(shape) = &self.shape {
-            return shape.hit(ray, ray_t);
+    fn hit(&self, ray: &Ray, mut ray_t: Interval) -> Option<Hit<'_>> {
+        if !self.shapes.is_empty() {
+            return self
+                .shapes
+                .iter()
+                .filter_map(|a| a.hit(ray, ray_t))
+                .min_by(|a, b| a.distance.total_cmp(&b.distance));
         }
 
         let (Some(x), Some(y), Some(z)) = (
@@ -134,6 +139,11 @@ impl AabbNode {
         } else {
             None
         };
+
+        if let Some(ref hit) = left_hit {
+            ray_t = Interval::new(ray_t.min(), hit.distance)
+        }
+
         let right_hit = if let Some(right) = &self.right {
             right.hit(ray, ray_t)
         } else {

@@ -43,8 +43,6 @@ pub struct Hit<'a> {
     pub front_face: bool,
 }
 
-
-
 //------------------------------------------------------------------------------
 
 #[derive(Debug, Clone)]
@@ -88,9 +86,9 @@ impl Sphere {
             let near = (h - d.sqrt()) / a;
             let far = (h + d.sqrt()) / a;
 
-            let t = if ray_t.surrounds(near) {
+            let t = if ray_t.contains(near) {
                 near
-            } else if ray_t.surrounds(far) {
+            } else if ray_t.contains(far) {
                 far
             } else {
                 return None;
