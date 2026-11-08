@@ -16,6 +16,24 @@ impl Shape {
             Shape::Sphere(sphere) => sphere.hit(ray, ray_t),
         }
     }
+
+    pub fn xs(&self) -> Interval {
+        match self {
+            Shape::Sphere(sphere) => sphere.xs(),
+        }
+    }
+
+    pub fn ys(&self) -> Interval {
+        match self {
+            Shape::Sphere(sphere) => sphere.ys(),
+        }
+    }
+
+    pub fn zs(&self) -> Interval {
+        match self {
+            Shape::Sphere(sphere) => sphere.zs(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -27,20 +45,32 @@ pub struct Hit<'a> {
     pub front_face: bool,
 }
 
+
+
 //------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sphere {
     center: Point,
     radius: f64,
+    xs: Interval,
+    ys: Interval,
+    zs: Interval,
     material: Arc<Material>,
 }
 
 impl Sphere {
     pub fn new(center: Point, radius: f64, material: Arc<Material>) -> Self {
+        let xs = Interval::new(center.x() - radius, center.x() + radius);
+        let ys = Interval::new(center.y() - radius, center.y() + radius);
+        let zs = Interval::new(center.z() - radius, center.z() + radius);
+
         Self {
             center,
             radius,
+            xs,
+            ys,
+            zs,
             material,
         }
     }
@@ -78,6 +108,18 @@ impl Sphere {
                 front_face,
             })
         }
+    }
+
+    pub fn xs(&self) -> Interval {
+        self.xs
+    }
+
+    pub fn ys(&self) -> Interval {
+        self.ys
+    }
+
+    pub fn zs(&self) -> Interval {
+        self.zs
     }
 
     fn normal(&self, ray: &Ray, intercept: Point) -> (Vec3, bool) {

@@ -1,4 +1,6 @@
-#[derive(Debug, Copy, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Interval {
     min: f64,
     max: f64,
@@ -24,6 +26,14 @@ impl Interval {
         self.max
     }
 
+    pub fn span(&self) -> f64 {
+        (self.max - self.min).abs()
+    }
+
+    pub fn center(&self) -> f64 {
+        (self.min() + self.max()) / 2.0
+    }
+
     pub fn contains(&self, x: f64) -> bool {
         self.min <= x && x <= self.max
     }
@@ -40,6 +50,11 @@ impl Interval {
         let min = self.min.max(second.min.max(third.min));
         let max = self.max.min(second.max.min(third.max));
         min < max
+    }
+
+    pub fn expand(&self, x: f64) -> Self {
+        let padding = x / 2.0;
+        Self::new(self.min - padding, self.max + padding)
     }
 }
 
