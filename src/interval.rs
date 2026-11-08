@@ -1,6 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone)]
 pub struct Interval {
     min: f64,
     max: f64,
@@ -49,12 +47,16 @@ impl Interval {
     pub fn overlap(&self, second: &Self, third: &Self) -> bool {
         let min = self.min.max(second.min.max(third.min));
         let max = self.max.min(second.max.min(third.max));
-        min < max
+        min <= max
     }
 
     pub fn expand(&self, x: f64) -> Self {
         let padding = x / 2.0;
         Self::new(self.min - padding, self.max + padding)
+    }
+
+    pub fn invert(&self) -> Self {
+        Self::new(self.max(), self.min())
     }
 }
 

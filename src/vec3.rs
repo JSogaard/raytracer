@@ -1,5 +1,4 @@
 use image::Rgb;
-use serde::{Deserialize, Serialize};
 use std::{
     array::{self},
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -11,7 +10,7 @@ pub const UNIT_Y: Vec3 = Vec3::new(0., 1., 0.);
 pub const UNIT_Z: Vec3 = Vec3::new(0., 0., 1.);
 pub const ZERO_VEC: Vec3 = Vec3::new(0., 0., 0.);
 
-#[derive(Copy, Clone, Default, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, PartialEq, Debug)]
 pub struct Vec3 {
     c: [f64; 3],
 }

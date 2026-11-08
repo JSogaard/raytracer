@@ -1,11 +1,9 @@
-use serde::{Deserialize, Serialize};
-
 use crate::vec3::Point;
 use crate::{interval::Interval, material::Material, ray::Ray, vec3::Vec3};
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Shape {
     Sphere(Sphere),
 }
@@ -49,7 +47,7 @@ pub struct Hit<'a> {
 
 //------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Sphere {
     center: Point,
     radius: f64,

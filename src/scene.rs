@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use std::{cmp::min_by, sync::Arc};
 
 use crate::{
     interval::Interval,
@@ -6,56 +6,62 @@ use crate::{
     shape::{Hit, Shape},
 };
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default)]
 pub struct Scene {
-    shapes: Vec<Shape>,
+    shapes: Vec<Arc<Shape>>,
+    tree: Option<AabbNode>,
 }
 
 impl Scene {
     pub fn new(shapes: Vec<Shape>) -> Self {
-        Self { shapes }
+        let shapes = shapes.into_iter().map(Arc::new).collect();
+        Self { shapes, tree: None }
     }
 
     pub fn add_shape(&mut self, shape: Shape) {
-        self.shapes.push(shape);
+        self.shapes.push(Arc::new(shape));
+        self.tree = None;
+    }
+
+    pub fn build_tree(&mut self) {
+        self.tree = Some(AabbNode::new(self.shapes.clone()));
     }
 
     pub fn hit_shapes(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
-        // let mut closest = ray_t.max();
-        // let mut closest_hit = None;
-
-        // for shape in &self.shapes {
-        //     let interval = Interval::new(ray_t.min(), closest);
-        //     if let Some(hit) = shape.hit(ray, interval) {
-        //         closest = hit.distance;
-        //         closest_hit = Some(hit);
-        //     }
-        // }
-        // closest_hit
-        
-        let tree = AabbNode::new(self.shapes.iter().collect());
-        tree.hit(ray, ray_t)
+        if self.shapes.is_empty() {
+            return None;
+        }
+        if let Some(tree) = &self.tree {
+            tree.hit(ray, ray_t)
+        } else {
+            panic!("AABB tree has to be built before checking for hits")
+        }
     }
 }
 
 //------------------------------------------------------------------------------
 
-#[derive(Clone, Debug)]
-struct AabbNode<'a> {
+const EPSILON: f64 = 0.0001;
+
+#[derive(Clone, Debug, Default)]
+struct AabbNode {
     xs: Interval,
     ys: Interval,
     zs: Interval,
     left: Option<Box<Self>>,
     right: Option<Box<Self>>,
-    shape: Option<&'a Shape>,
+    shape: Option<Arc<Shape>>,
 }
 
-impl<'a> AabbNode<'a> {
-    fn new(mut shapes: Vec<&'a Shape>) -> Self {
-        assert!(!shapes.is_empty(), "AABB tree cannot be constructed from an empty vector");
-        
+impl AabbNode {
+    fn new(mut shapes: Vec<Arc<Shape>>) -> Self {
+        assert!(
+            !shapes.is_empty(),
+            "AABB tree cannot be constructed from an empty vector"
+        );
+
         if shapes.len() == 1 {
-            let shape = shapes[0];
+            let shape = shapes[0].clone();
             return Self {
                 xs: shape.xs(),
                 ys: shape.ys(),
@@ -63,16 +69,16 @@ impl<'a> AabbNode<'a> {
                 left: None,
                 right: None,
                 shape: Some(shape),
-            }
+            };
         }
 
-        let xs = find_bounding(&shapes, |a| a.xs());
-        let ys = find_bounding(&shapes, |a| a.ys());
-        let zs = find_bounding(&shapes, |a| a.zs());
+        let mut xs = find_bounding(&shapes, |a| a.xs());
+        let mut ys = find_bounding(&shapes, |a| a.ys());
+        let mut zs = find_bounding(&shapes, |a| a.zs());
 
         let [x_span, y_span, z_span] = [xs, ys, zs].map(|a| a.span());
 
-        let get_center: fn(&&Shape) -> f64 = if x_span >= y_span && x_span >= z_span {
+        let get_center: fn(&Shape) -> f64 = if x_span >= y_span && x_span >= z_span {
             |a| a.xs().center()
         } else if y_span >= z_span {
             |a| a.ys().center()
@@ -80,14 +86,22 @@ impl<'a> AabbNode<'a> {
             |a| a.zs().center()
         };
 
-        shapes.sort_by(|a, b| {
-            get_center(a).total_cmp(&get_center(b))
-        });
+        shapes.sort_by(|a, b| get_center(a.as_ref()).total_cmp(&get_center(b.as_ref())));
 
         let right_shapes = shapes.split_off(shapes.len() / 2);
 
         let left_node = Self::new(shapes);
         let right_node = Self::new(right_shapes);
+
+        if xs.span() < EPSILON {
+            xs = xs.expand(EPSILON / 2.0);
+        }
+        if ys.span() < EPSILON {
+            ys = ys.expand(EPSILON / 2.0);
+        }
+        if zs.span() < EPSILON {
+            zs = zs.expand(EPSILON / 2.0);
+        }
 
         Self {
             xs,
@@ -99,15 +113,48 @@ impl<'a> AabbNode<'a> {
         }
     }
 
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'a>> {
-        todo!()
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
+        if let Some(shape) = &self.shape {
+            return shape.hit(ray, ray_t);
+        }
+
+        let (Some(x), Some(y), Some(z)) = (
+            ray.intersect_x(self.xs),
+            ray.intersect_y(self.ys),
+            ray.intersect_z(self.zs),
+        ) else {
+            return None;
+        };
+        if !x.overlap(&y, &z) {
+            return None;
+        }
+
+        let left_hit = if let Some(left) = &self.left {
+            left.hit(ray, ray_t)
+        } else {
+            None
+        };
+        let right_hit = if let Some(right) = &self.right {
+            right.hit(ray, ray_t)
+        } else {
+            None
+        };
+
+        match (left_hit, right_hit) {
+            (Some(left_hit), Some(right_hit)) => Some(min_by(left_hit, right_hit, |a, b| {
+                a.distance.total_cmp(&b.distance)
+            })),
+            (Some(hit), None) => Some(hit),
+            (None, Some(hit)) => Some(hit),
+            (None, None) => None,
+        }
     }
 }
 
-fn find_bounding(shapes: &[&Shape], get_values: impl Fn(&&Shape) -> Interval) -> Interval {
+fn find_bounding(shapes: &[Arc<Shape>], get_values: impl Fn(&Shape) -> Interval) -> Interval {
     shapes
         .iter()
-        .map(get_values)
+        .map(|s| get_values(s.as_ref()))
         .reduce(Interval::bounding)
         .unwrap()
 }

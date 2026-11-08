@@ -1,4 +1,3 @@
-use std::fs;
 use std::sync::Arc;
 use anyhow::Result;
 use raytracer::camera::CameraConfig;
@@ -11,8 +10,6 @@ use raytracer::{
     shape::Shape,
     vec3::{Color, Point, Vec3},
 };
-
-const LOAD: bool = true;
 
 fn main() -> Result<()> {
     let mut scene = Scene::default();
@@ -48,13 +45,7 @@ fn main() -> Result<()> {
         }
     }
 
-    if LOAD {
-        let scene_json = fs::read_to_string("scene.json")?;
-        scene = serde_json::from_str(&scene_json)?;
-    } else {
-        let scene_json = serde_json::to_string_pretty(&scene)?;
-        fs::write("scene.json", scene_json)?;
-    }
+    scene.build_tree();
 
     let config = CameraConfig {
         aspect_ratio: 1.0,
@@ -73,7 +64,7 @@ fn main() -> Result<()> {
 
     let start = std::time::Instant::now();
 
-    let image = camera.render(&scene, ray_t, 10);
+    let image = camera.render(&scene, ray_t, 25);
 
     println!("{:?}", start.elapsed());
 

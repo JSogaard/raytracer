@@ -1,15 +1,13 @@
 use core::panic;
 use std::fmt::Debug;
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
     ray::Ray,
     shape::Hit,
     vec3::{Color, Vec3},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Material {
     Lambertian(Lambertian),
     Metal(Metal),
@@ -35,7 +33,7 @@ pub struct Scatter {
 //------------------------------------------------------------------------------
 
 /// Lambertian diffuse material
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Lambertian {
     albedo: Color,
 }
@@ -63,7 +61,7 @@ impl Lambertian {
 //------------------------------------------------------------------------------
 
 /// Polished metal material
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Metal {
     albedo: Color,
     fuzz: f64,
@@ -95,7 +93,7 @@ impl Metal {
 
 //------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Refractive {
     refract_ratio: f64,
 }
