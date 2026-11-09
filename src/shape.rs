@@ -32,6 +32,12 @@ impl Shape {
             Shape::Sphere(sphere) => sphere.zs(),
         }
     }
+
+    pub fn center (&self) -> Point {
+        match self {
+            Shape::Sphere(sphere) => sphere.center(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -116,6 +122,10 @@ impl Sphere {
 
     pub fn zs(&self) -> Interval {
         self.zs
+    }
+
+    pub fn center(&self) -> Point {
+        self.center
     }
 
     fn normal(&self, ray: &Ray, intercept: Point) -> (Vec3, bool) {

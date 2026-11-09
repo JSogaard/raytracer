@@ -1,5 +1,7 @@
-use std::{cmp::min_by, sync::Arc};
-
+use std::{
+    cmp::min_by,
+    sync::Arc,
+};
 use crate::{
     interval::Interval,
     ray::Ray,
@@ -44,6 +46,7 @@ impl Scene {
 const EPSILON: f64 = 0.0001;
 const MIN_LEAF_SIZE: usize = 4;
 const MAX_DEPTH: usize = 64;
+const SAH_BINS: usize = 16;
 
 #[derive(Clone, Debug, Default)]
 struct AabbNode {
@@ -56,15 +59,15 @@ struct AabbNode {
 }
 
 impl AabbNode {
-    fn new(mut shapes: Vec<Arc<Shape>>, depth: usize) -> Self {
+    fn new(shapes: Vec<Arc<Shape>>, depth: usize) -> Self {
         assert!(
             !shapes.is_empty(),
             "AABB tree cannot be constructed from an empty vector"
         );
 
-        let mut xs = find_bounding(&shapes, |a| a.xs());
-        let mut ys = find_bounding(&shapes, |a| a.ys());
-        let mut zs = find_bounding(&shapes, |a| a.zs());
+        let mut xs = find_bounding(&shapes, Axis::X).unwrap();
+        let mut ys = find_bounding(&shapes, Axis::Y).unwrap();
+        let mut zs = find_bounding(&shapes, Axis::Z).unwrap();
 
         if shapes.len() <= MIN_LEAF_SIZE || depth == 0 {
             return Self {
@@ -77,19 +80,17 @@ impl AabbNode {
             };
         }
 
-        let [x_span, y_span, z_span] = [xs, ys, zs].map(|a| a.span());
+        let [x_span, y_span, z_span] = [&xs, &ys, &zs].map(|a| a.span());
 
-        let get_center: fn(&Shape) -> f64 = if x_span >= y_span && x_span >= z_span {
-            |a| a.xs().center()
+        let axis = if x_span >= y_span && x_span >= z_span {
+            Axis::X
         } else if y_span >= z_span {
-            |a| a.ys().center()
+            Axis::Y
         } else {
-            |a| a.zs().center()
+            Axis::Z
         };
 
-        shapes.sort_by(|a, b| get_center(a.as_ref()).total_cmp(&get_center(b.as_ref())));
-
-        let right_shapes = shapes.split_off(shapes.len() / 2);
+        let (left_shapes, right_shapes) = split_box(shapes, axis);
 
         if xs.span() < EPSILON {
             xs = xs.expand(EPSILON / 2.0);
@@ -101,7 +102,7 @@ impl AabbNode {
             zs = zs.expand(EPSILON / 2.0);
         }
 
-        let left_node = Self::new(shapes, depth - 1);
+        let left_node = Self::new(left_shapes, depth - 1);
         let right_node = Self::new(right_shapes, depth - 1);
 
         Self {
@@ -161,10 +162,138 @@ impl AabbNode {
     }
 }
 
-fn find_bounding(shapes: &[Arc<Shape>], get_values: impl Fn(&Shape) -> Interval) -> Interval {
+#[derive(Copy, Clone, Debug)]
+enum Axis {
+    X,
+    Y,
+    Z,
+}
+
+impl Axis {
+    fn get_min_max(&self, shape: &Shape) -> Interval {
+        match self {
+            Axis::X => shape.xs(),
+            Axis::Y => shape.ys(),
+            Axis::Z => shape.zs(),
+        }
+    }
+
+    fn get_axis_center(&self, shape: &Shape) -> f64 {
+        match self {
+            Axis::X => shape.xs().center(),
+            Axis::Y => shape.ys().center(),
+            Axis::Z => shape.zs().center(),
+        }
+    }
+}
+
+fn find_bounding<'a, I>(shapes: I, axis: Axis) -> Option<Interval>
+where
+    I: IntoIterator<Item = &'a Arc<Shape>>,
+{
     shapes
-        .iter()
-        .map(|s| get_values(s.as_ref()))
+        .into_iter()
+        .map(|s| axis.get_min_max(s))
         .reduce(Interval::bounding)
-        .unwrap()
+}
+
+fn split_box(mut shapes: Vec<Arc<Shape>>, axis: Axis) -> (Vec<Arc<Shape>>, Vec<Arc<Shape>>) {
+    let min_center = shapes
+        .iter()
+        .map(|shape| axis.get_axis_center(shape))
+        .min_by(f64::total_cmp)
+        .unwrap();
+    let max_center = shapes
+        .iter()
+        .map(|shape| axis.get_axis_center(shape))
+        .max_by(f64::total_cmp)
+        .unwrap();
+    let total_span = max_center - min_center;
+
+    if total_span == 0.0 {
+        let right_shapes = shapes.split_off(shapes.len() / 2);
+        return (shapes, right_shapes);
+    }
+
+    let bin_number = move |shape: &Arc<Shape>| {
+        (SAH_BINS as f64 * (axis.get_axis_center(shape) - min_center) / total_span)
+            .clamp(0.0, SAH_BINS as f64 - 1.0) as usize
+    };
+
+    shapes.sort_unstable_by_key(|s| bin_number(s));
+
+    let mut bin_counts = [0_usize; SAH_BINS];
+    let mut bin_bounds: [Option<[Interval; 3]>; SAH_BINS] = [None; SAH_BINS];
+
+    for shape in &shapes {
+        let bin = bin_number(shape);
+        bin_counts[bin] += 1;
+
+        let shape_bounds = [shape.xs(), shape.ys(), shape.zs()];
+        
+        bin_bounds[bin] = Some(match bin_bounds[bin] {
+            Some(bounds) => Interval::bounding_3d(&bounds, &shape_bounds),
+            None => shape_bounds,
+        })
+    }
+
+    let mut split_costs: Vec<f64> = Vec::new();
+
+    for split in 1..SAH_BINS {
+        let left_bounds = find_split_bounds(&bin_bounds, 0, split);
+        let left_surface = if let Some(bounds) = left_bounds {
+            surface_area(bounds)
+        } else {
+            0.0
+        };
+        let left_count = bin_counts[0..split].iter().sum::<usize>();
+
+        let right_bounds = find_split_bounds(&bin_bounds, split, SAH_BINS);
+        let right_surface = if let Some(bounds) = right_bounds {
+            surface_area(bounds)
+        } else {
+            0.0
+        };
+        let right_count = bin_counts[split..SAH_BINS].iter().sum::<usize>();
+
+        if left_count == 0 || right_count == 0 {
+            split_costs.push(f64::INFINITY);
+            continue;
+        }
+
+        let cost = left_surface * left_count as f64 + right_surface * right_count as f64;
+        split_costs.push(cost);
+    }
+
+
+    let split_bin = split_costs.iter().enumerate().min_by(|a, b| a.1.total_cmp(b.1)).unwrap().0 + 1;
+
+    let left_count = bin_counts[0..split_bin].iter().sum();
+
+    let right_shapes = shapes.split_off(left_count);
+
+    (shapes, right_shapes)
+}
+
+fn find_split_bounds(
+    bin_bounds: &[Option<[Interval; 3]>],
+    start: usize,
+    end: usize,
+) -> Option<[Interval; 3]> {
+    bin_bounds[start..end]
+        .iter()
+        .fold(None, |acc, &elem| match (acc, elem) {
+            (Some(acc), Some(elem)) => Some(Interval::bounding_3d(&acc, &elem)),
+            (Some(acc), None) => Some(acc),
+            (None, Some(elem)) => Some(elem),
+            (None, None) => None,
+        })
+}
+
+fn surface_area(bounds: [Interval; 3]) -> f64 {
+    let dx = bounds[0].span();
+    let dy = bounds[1].span();
+    let dz = bounds[2].span();
+
+    2.0 * (dx * dy + dy * dz + dx * dz)
 }

@@ -1,3 +1,7 @@
+use std::array;
+
+pub const ZERO_INTERVAL: Interval = Interval::new(0.0, 0.0);
+
 #[derive(Debug, Copy, Clone)]
 pub struct Interval {
     min: f64,
@@ -5,15 +9,19 @@ pub struct Interval {
 }
 
 impl Interval {
-    pub fn new(min: f64, max: f64) -> Self {
+    pub const fn new(min: f64, max: f64) -> Self {
         Self { min, max }
     }
 
-    pub fn bounding(first: Self, second: Self) -> Self {
-        let min = f64::min(first.min, second.min);
-        let max = f64::max(first.max, second.max);
+    pub fn bounding(self, second: Self) -> Self {
+        let min = f64::min(self.min, second.min);
+        let max = f64::max(self.max, second.max);
 
         Self { min, max }
+    }
+
+    pub fn bounding_3d(first: &[Interval; 3], second: &[Interval; 3]) -> [Interval; 3] {
+        array::from_fn(|axis| first[axis].bounding(second[axis]))
     }
 
     pub fn min(&self) -> f64 {
