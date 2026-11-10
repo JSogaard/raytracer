@@ -1,12 +1,7 @@
-use std::{
-    cmp::min_by,
-    sync::Arc,
-};
 use crate::{
-    interval::Interval,
-    ray::Ray,
-    shape::{Hit, Shape},
+    interval::Interval, ray::Ray, shape::{Hit, Shape}, vec3::Vec3,
 };
+use std::{cmp::min_by, sync::Arc};
 
 #[derive(Debug, Default)]
 pub struct Scene {
@@ -36,7 +31,7 @@ impl Scene {
         if let Some(tree) = &self.tree {
             tree.hit(ray, ray_t)
         } else {
-            panic!("AABB tree has to be built before checking for hits")
+            None
         }
     }
 }
@@ -65,9 +60,9 @@ impl AabbNode {
             "AABB tree cannot be constructed from an empty vector"
         );
 
-        let mut xs = find_bounding(&shapes, Axis::X).unwrap();
-        let mut ys = find_bounding(&shapes, Axis::Y).unwrap();
-        let mut zs = find_bounding(&shapes, Axis::Z).unwrap();
+        let mut xs = find_bounding(&shapes, Shape::xs).unwrap();
+        let mut ys = find_bounding(&shapes, Shape::ys).unwrap();
+        let mut zs = find_bounding(&shapes, Shape::zs).unwrap();
 
         if shapes.len() <= MIN_LEAF_SIZE || depth == 0 {
             return Self {
@@ -83,11 +78,11 @@ impl AabbNode {
         let [x_span, y_span, z_span] = [&xs, &ys, &zs].map(|a| a.span());
 
         let axis = if x_span >= y_span && x_span >= z_span {
-            Axis::X
+            Shape::xs
         } else if y_span >= z_span {
-            Axis::Y
+            Shape::ys
         } else {
-            Axis::Z
+            Shape::zs
         };
 
         let (left_shapes, right_shapes) = split_box(shapes, axis);
@@ -162,50 +157,25 @@ impl AabbNode {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-enum Axis {
-    X,
-    Y,
-    Z,
-}
-
-impl Axis {
-    fn get_min_max(&self, shape: &Shape) -> Interval {
-        match self {
-            Axis::X => shape.xs(),
-            Axis::Y => shape.ys(),
-            Axis::Z => shape.zs(),
-        }
-    }
-
-    fn get_axis_center(&self, shape: &Shape) -> f64 {
-        match self {
-            Axis::X => shape.xs().center(),
-            Axis::Y => shape.ys().center(),
-            Axis::Z => shape.zs().center(),
-        }
-    }
-}
-
-fn find_bounding<'a, I>(shapes: I, axis: Axis) -> Option<Interval>
+fn find_bounding<'a, I>(shapes: I, axis: fn(&Shape) -> Interval) -> Option<Interval>
 where
     I: IntoIterator<Item = &'a Arc<Shape>>,
 {
     shapes
         .into_iter()
-        .map(|s| axis.get_min_max(s))
+        .map(|s| axis(s))
         .reduce(Interval::bounding)
 }
 
-fn split_box(mut shapes: Vec<Arc<Shape>>, axis: Axis) -> (Vec<Arc<Shape>>, Vec<Arc<Shape>>) {
+fn split_box(mut shapes: Vec<Arc<Shape>>, axis: fn(&Shape) -> Interval) -> (Vec<Arc<Shape>>, Vec<Arc<Shape>>) {
     let min_center = shapes
         .iter()
-        .map(|shape| axis.get_axis_center(shape))
+        .map(|shape| axis(shape).center())
         .min_by(f64::total_cmp)
         .unwrap();
     let max_center = shapes
         .iter()
-        .map(|shape| axis.get_axis_center(shape))
+        .map(|shape| axis(shape).center())
         .max_by(f64::total_cmp)
         .unwrap();
     let total_span = max_center - min_center;
@@ -215,8 +185,8 @@ fn split_box(mut shapes: Vec<Arc<Shape>>, axis: Axis) -> (Vec<Arc<Shape>>, Vec<A
         return (shapes, right_shapes);
     }
 
-    let bin_number = move |shape: &Arc<Shape>| {
-        (SAH_BINS as f64 * (axis.get_axis_center(shape) - min_center) / total_span)
+    let bin_number = |shape: &Arc<Shape>| {
+        (SAH_BINS as f64 * (axis(shape).center() - min_center) / total_span)
             .clamp(0.0, SAH_BINS as f64 - 1.0) as usize
     };
 
@@ -230,7 +200,7 @@ fn split_box(mut shapes: Vec<Arc<Shape>>, axis: Axis) -> (Vec<Arc<Shape>>, Vec<A
         bin_counts[bin] += 1;
 
         let shape_bounds = [shape.xs(), shape.ys(), shape.zs()];
-        
+
         bin_bounds[bin] = Some(match bin_bounds[bin] {
             Some(bounds) => Interval::bounding_3d(&bounds, &shape_bounds),
             None => shape_bounds,
@@ -265,8 +235,13 @@ fn split_box(mut shapes: Vec<Arc<Shape>>, axis: Axis) -> (Vec<Arc<Shape>>, Vec<A
         split_costs.push(cost);
     }
 
-
-    let split_bin = split_costs.iter().enumerate().min_by(|a, b| a.1.total_cmp(b.1)).unwrap().0 + 1;
+    let split_bin = split_costs
+        .iter()
+        .enumerate()
+        .min_by(|a, b| a.1.total_cmp(b.1))
+        .unwrap()
+        .0
+        + 1;
 
     let left_count = bin_counts[0..split_bin].iter().sum();
 
