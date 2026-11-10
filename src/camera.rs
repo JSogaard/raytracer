@@ -2,7 +2,7 @@ use crate::{
     interval::Interval,
     ray::Ray,
     scene::Scene,
-    vec3::{Color, Point, Vec3},
+    vec3::{Color, Vec3},
 };
 use image::RgbImage;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -14,10 +14,10 @@ const MAX_DEPTH: i32 = 10;
 pub struct Camera {
     pixel_width: u32,
     pixel_height: u32,
-    center: Point,
+    center: Vec3,
     pixel_delta_x: Vec3,
     pixel_delta_y: Vec3,
-    top_left: Point,
+    top_left: Vec3,
     focus_dist: f64,
     aperture_angle: f64,
 }
@@ -26,7 +26,7 @@ pub struct CameraConfig {
     pub aspect_ratio: f64,
     pub pixel_height: u32,
     pub vfov: f64,
-    pub center: Point,
+    pub center: Vec3,
     pub direction: Vec3,
     pub up_direction: Vec3,
     pub focus_dist: f64,

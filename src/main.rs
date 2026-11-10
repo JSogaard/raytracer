@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use anyhow::Result;
 use raytracer::camera::CameraConfig;
 use raytracer::interval::Interval;
@@ -8,8 +7,9 @@ use raytracer::{
     material::{Lambertian, Material, Metal, Refractive},
     scene::Scene,
     shape::Shape,
-    vec3::{Color, Point, Vec3},
+    vec3::{Color, Vec3},
 };
+use std::sync::Arc;
 
 fn main() -> Result<()> {
     let mut scene = Scene::default();
@@ -18,7 +18,7 @@ fn main() -> Result<()> {
         0.25, 0.5, 0.25,
     ))));
     scene.add_shape(Shape::Sphere(Sphere::new(
-        Point::new(0.0, 0.0, -5000.0),
+        Vec3::new(0.0, 0.0, -5000.0),
         5000.0,
         ground_mat,
     )));
@@ -27,7 +27,7 @@ fn main() -> Result<()> {
         for y in 0..10 {
             let [x, y] = [x, y].map(|x| x as f64 * 1.5);
             let radius = fastrand::f64() * 0.15 + 0.4;
-            let pos = Point::new(x + fastrand::f64() * 0.8, y + fastrand::f64() * 0.8, radius);
+            let pos = Vec3::new(x + fastrand::f64() * 0.8, y + fastrand::f64() * 0.8, radius);
 
             let mat_num = fastrand::f64();
 
@@ -51,7 +51,7 @@ fn main() -> Result<()> {
         aspect_ratio: 1.0,
         pixel_height: 1080,
         vfov: 60.0,
-        center: Point::new(0.0, 0.0, 3.0),
+        center: Vec3::new(0.0, 0.0, 3.0),
         direction: Vec3::new(1.0, 0.75, -0.6),
         up_direction: Vec3::new(0.0, 0.0, 1.0),
         focus_dist: 4.0,
