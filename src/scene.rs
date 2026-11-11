@@ -1,5 +1,5 @@
 use crate::{
-    interval::Interval, ray::Ray, shape::{Hit, Hittable}, vec3::Vec3,
+    interval::Interval, ray::Ray, shape::{Hit, Hittable},
 };
 use std::{cmp::min_by, sync::Arc};
 

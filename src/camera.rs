@@ -8,7 +8,7 @@ use image::RgbImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::{IndexedParallelIterator, ParallelIterator};
 
-const MAX_DEPTH: i32 = 10;
+const MAX_DEPTH: i32 = 20;
 
 #[derive(Debug, Clone)]
 pub struct Camera {

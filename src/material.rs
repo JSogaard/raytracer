@@ -79,10 +79,10 @@ impl Metal {
 impl Metal {
     fn scatter(&self, ray_in: &Ray, hit: &Hit) -> Option<Scatter> {
         let mut direction = ray_in.direction().reflect(hit.normal);
+        direction += Vec3::random_unit_vec() * self.fuzz;
         if direction.dot(hit.normal) < 0.0 {
             return None;
         }
-        direction += Vec3::random_unit_vec() * self.fuzz;
         let ray = Ray::new(hit.hit_point, direction.normalize());
         Some(Scatter {
             ray,

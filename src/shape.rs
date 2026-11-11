@@ -7,7 +7,6 @@ pub trait Hittable: Debug + Send + Sync {
     fn xs(&self) -> Interval;
     fn ys(&self) -> Interval;
     fn zs(&self) -> Interval;
-    fn center(&self) -> Vec3;
 }
 
 #[derive(Debug, Clone)]
@@ -55,10 +54,14 @@ impl Sphere {
             (-normal, false)
         }
     }
+
+    pub fn center(&self) -> Vec3 {
+        self.center
+    }
 }
 
 impl Hittable for Sphere {
-        fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
         let orig = ray.origin();
         let dir = ray.direction();
 
@@ -104,10 +107,6 @@ impl Hittable for Sphere {
     fn zs(&self) -> Interval {
         self.zs
     }
-
-    fn center(&self) -> Vec3 {
-        self.center
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -118,6 +117,7 @@ pub struct Quad {
     vert1: Vec3,
     vert2: Vec3,
     normal: Vec3,
+    w: Vec3,
     d: f64,
     xs: Interval,
     ys: Interval,
@@ -127,8 +127,10 @@ pub struct Quad {
 
 impl Quad {
     pub fn new(orig: Vec3, vert1: Vec3, vert2: Vec3, mat: Arc<Material>) -> Self {
-        let normal = vert1.cross(vert2).normalize();
+        let n = vert1.cross(vert2);
+        let normal = n.normalize();
         let d = normal.dot(orig);
+        let w = n / n.dot(n);
         let opposit = orig + vert1 + vert2;
 
         let points = [orig, orig + vert1, orig + vert2, opposit];
@@ -158,6 +160,7 @@ impl Quad {
             vert1,
             vert2,
             normal,
+            w,
             d,
             xs,
             ys,
@@ -165,16 +168,54 @@ impl Quad {
             mat,
         }
     }
+}
 
-    pub fn xs(&self) -> Interval {
+impl Hittable for Quad {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
+        let denominator = self.normal.dot(ray.direction());
+        if denominator == 0.0 {
+            return None;
+        }
+
+        let distance = (self.d - self.normal.dot(ray.origin())) / (denominator);
+        if !ray_t.contains(distance) {
+            return None;
+        }
+
+        let hit_point = ray.point_at(distance);
+        let rel_hit_point = hit_point - self.orig;
+        let front_face = ray.direction().dot(self.normal) < 0.0;
+        let normal = if front_face {
+            self.normal
+        } else {
+            -self.normal
+        };
+
+        let alpha = self.w.dot(rel_hit_point.cross(self.vert2));
+        let beta = self.w.dot(self.vert1.cross(rel_hit_point));
+
+        if (0.0..=1.0).contains(&alpha) && (0.0..=1.0).contains(&beta) {
+            Some(Hit {
+                distance,
+                normal,
+                hit_point,
+                material: &self.mat,
+                front_face,
+            })
+        } else {
+            None
+        }
+    }
+
+    fn xs(&self) -> Interval {
         self.xs
     }
 
-    pub fn ys(&self) -> Interval {
+    fn ys(&self) -> Interval {
         self.ys
     }
 
-    pub fn zs(&self) -> Interval {
+    fn zs(&self) -> Interval {
         self.zs
     }
 }
