@@ -1,22 +1,22 @@
 use crate::{
-    interval::Interval, ray::Ray, shape::{Hit, Shape}, vec3::Vec3,
+    interval::Interval, ray::Ray, shape::{Hit, Hittable}, vec3::Vec3,
 };
 use std::{cmp::min_by, sync::Arc};
 
 #[derive(Debug, Default)]
 pub struct Scene {
-    shapes: Vec<Arc<Shape>>,
+    shapes: Vec<Arc<dyn Hittable>>,
     tree: Option<AabbNode>,
 }
 
 impl Scene {
-    pub fn new(shapes: Vec<Shape>) -> Self {
-        let shapes = shapes.into_iter().map(Arc::new).collect();
+    pub fn new(shapes: Vec<Arc<dyn Hittable>>) -> Self {
+        let shapes = shapes;
         Self { shapes, tree: None }
     }
 
-    pub fn add_shape(&mut self, shape: Shape) {
-        self.shapes.push(Arc::new(shape));
+    pub fn add_shape(&mut self, shape: Arc<dyn Hittable>) {
+        self.shapes.push(shape);
         self.tree = None;
     }
 
@@ -50,19 +50,19 @@ struct AabbNode {
     zs: Interval,
     left: Option<Box<Self>>,
     right: Option<Box<Self>>,
-    shapes: Vec<Arc<Shape>>,
+    shapes: Vec<Arc<dyn Hittable>>,
 }
 
 impl AabbNode {
-    fn new(shapes: Vec<Arc<Shape>>, depth: usize) -> Self {
+    fn new(shapes: Vec<Arc<dyn Hittable>>, depth: usize) -> Self {
         assert!(
             !shapes.is_empty(),
             "AABB tree cannot be constructed from an empty vector"
         );
 
-        let mut xs = find_bounding(&shapes, Shape::xs).unwrap();
-        let mut ys = find_bounding(&shapes, Shape::ys).unwrap();
-        let mut zs = find_bounding(&shapes, Shape::zs).unwrap();
+        let mut xs = find_bounding(&shapes, |s| s.xs()).unwrap();
+        let mut ys = find_bounding(&shapes, |s| s.ys()).unwrap();
+        let mut zs = find_bounding(&shapes, |s| s.zs()).unwrap();
 
         if shapes.len() <= MIN_LEAF_SIZE || depth == 0 {
             return Self {
@@ -78,11 +78,11 @@ impl AabbNode {
         let [x_span, y_span, z_span] = [&xs, &ys, &zs].map(|a| a.span());
 
         let axis = if x_span >= y_span && x_span >= z_span {
-            Shape::xs
+            |s: &dyn Hittable| s.xs()
         } else if y_span >= z_span {
-            Shape::ys
+            |s: &dyn Hittable| s.ys()
         } else {
-            Shape::zs
+            |s: &dyn Hittable| s.zs()
         };
 
         let (left_shapes, right_shapes) = split_box(shapes, axis);
@@ -157,25 +157,25 @@ impl AabbNode {
     }
 }
 
-fn find_bounding<'a, I>(shapes: I, axis: fn(&Shape) -> Interval) -> Option<Interval>
+fn find_bounding<'a, I>(shapes: I, axis: fn(&dyn Hittable) -> Interval) -> Option<Interval>
 where
-    I: IntoIterator<Item = &'a Arc<Shape>>,
+    I: IntoIterator<Item = &'a Arc<dyn Hittable>>,
 {
     shapes
         .into_iter()
-        .map(|s| axis(s))
+        .map(|s| axis(s.as_ref()))
         .reduce(Interval::bounding)
 }
 
-fn split_box(mut shapes: Vec<Arc<Shape>>, axis: fn(&Shape) -> Interval) -> (Vec<Arc<Shape>>, Vec<Arc<Shape>>) {
+fn split_box(mut shapes: Vec<Arc<dyn Hittable>>, axis: fn(&dyn Hittable) -> Interval) -> (Vec<Arc<dyn Hittable>>, Vec<Arc<dyn Hittable>>) {
     let min_center = shapes
         .iter()
-        .map(|shape| axis(shape).center())
+        .map(|shape| axis(shape.as_ref()).center())
         .min_by(f64::total_cmp)
         .unwrap();
     let max_center = shapes
         .iter()
-        .map(|shape| axis(shape).center())
+        .map(|shape| axis(shape.as_ref()).center())
         .max_by(f64::total_cmp)
         .unwrap();
     let total_span = max_center - min_center;
@@ -185,8 +185,8 @@ fn split_box(mut shapes: Vec<Arc<Shape>>, axis: fn(&Shape) -> Interval) -> (Vec<
         return (shapes, right_shapes);
     }
 
-    let bin_number = |shape: &Arc<Shape>| {
-        (SAH_BINS as f64 * (axis(shape).center() - min_center) / total_span)
+    let bin_number = |shape: &Arc<dyn Hittable>| {
+        (SAH_BINS as f64 * (axis(shape.as_ref()).center() - min_center) / total_span)
             .clamp(0.0, SAH_BINS as f64 - 1.0) as usize
     };
 

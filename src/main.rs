@@ -6,7 +6,6 @@ use raytracer::{
     camera::Camera,
     material::{Lambertian, Material, Metal, Refractive},
     scene::Scene,
-    shape::Shape,
     vec3::{Color, Vec3},
 };
 use std::sync::Arc;
@@ -17,7 +16,7 @@ fn main() -> Result<()> {
     let ground_mat = Arc::new(Material::Lambertian(Lambertian::new(Color::new(
         0.25, 0.5, 0.25,
     ))));
-    scene.add_shape(Shape::Sphere(Sphere::new(
+    scene.add_shape(Arc::new(Sphere::new(
         Vec3::new(0.0, 0.0, -5000.0),
         5000.0,
         ground_mat,
@@ -41,7 +40,7 @@ fn main() -> Result<()> {
                 Arc::new(Material::Lambertian(Lambertian::new(color)))
             };
 
-            scene.add_shape(Shape::Sphere(Sphere::new(pos, radius, mat)));
+            scene.add_shape(Arc::new(Sphere::new(pos, radius, mat)));
         }
     }
 

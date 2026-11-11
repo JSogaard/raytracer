@@ -2,41 +2,12 @@ use crate::{interval::Interval, material::Material, ray::Ray, vec3::Vec3};
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
-pub enum Shape {
-    Sphere(Sphere),
-}
-
-impl Shape {
-    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
-        match self {
-            Shape::Sphere(sphere) => sphere.hit(ray, ray_t),
-        }
-    }
-
-    pub fn xs(&self) -> Interval {
-        match self {
-            Shape::Sphere(sphere) => sphere.xs(),
-        }
-    }
-
-    pub fn ys(&self) -> Interval {
-        match self {
-            Shape::Sphere(sphere) => sphere.ys(),
-        }
-    }
-
-    pub fn zs(&self) -> Interval {
-        match self {
-            Shape::Sphere(sphere) => sphere.zs(),
-        }
-    }
-
-    pub fn center(&self) -> Vec3 {
-        match self {
-            Shape::Sphere(sphere) => sphere.center(),
-        }
-    }
+pub trait Hittable: Debug + Send + Sync {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>>;
+    fn xs(&self) -> Interval;
+    fn ys(&self) -> Interval;
+    fn zs(&self) -> Interval;
+    fn center(&self) -> Vec3;
 }
 
 #[derive(Debug, Clone)]
@@ -76,7 +47,18 @@ impl Sphere {
         }
     }
 
-    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
+    fn normal(&self, ray: &Ray, intercept: Vec3) -> (Vec3, bool) {
+        let normal = (intercept - self.center) / self.radius;
+        if ray.direction().dot(normal) <= 0.0 {
+            (normal, true)
+        } else {
+            (-normal, false)
+        }
+    }
+}
+
+impl Hittable for Sphere {
+        fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
         let orig = ray.origin();
         let dir = ray.direction();
 
@@ -111,29 +93,20 @@ impl Sphere {
         }
     }
 
-    pub fn xs(&self) -> Interval {
+    fn xs(&self) -> Interval {
         self.xs
     }
 
-    pub fn ys(&self) -> Interval {
+    fn ys(&self) -> Interval {
         self.ys
     }
 
-    pub fn zs(&self) -> Interval {
+    fn zs(&self) -> Interval {
         self.zs
     }
 
-    pub fn center(&self) -> Vec3 {
+    fn center(&self) -> Vec3 {
         self.center
-    }
-
-    fn normal(&self, ray: &Ray, intercept: Vec3) -> (Vec3, bool) {
-        let normal = (intercept - self.center) / self.radius;
-        if ray.direction().dot(normal) <= 0.0 {
-            (normal, true)
-        } else {
-            (-normal, false)
-        }
     }
 }
 
