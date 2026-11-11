@@ -1,3 +1,4 @@
+use crate::interval::{self, INF_INTERVAL};
 use crate::{interval::Interval, material::Material, ray::Ray, vec3::Vec3};
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -135,24 +136,10 @@ impl Quad {
 
         let points = [orig, orig + vert1, orig + vert2, opposit];
 
-        let interval_for = |axis: fn(&Vec3) -> f64| {
-            let min = points
-                .iter()
-                .map(axis)
-                .min_by(|a, b| a.total_cmp(b))
-                .unwrap();
-            let max = points
-                .iter()
-                .map(axis)
-                .max_by(|a, b| a.total_cmp(b))
-                .unwrap();
-            Interval::new(min, max)
-        };
-
         let (xs, ys, zs) = (
-            interval_for(Vec3::x),
-            interval_for(Vec3::y),
-            interval_for(Vec3::z),
+            interval_for(&points, Vec3::x),
+            interval_for(&points, Vec3::y),
+            interval_for(&points, Vec3::z),
         );
 
         Self {
@@ -218,4 +205,99 @@ impl Hittable for Quad {
     fn zs(&self) -> Interval {
         self.zs
     }
+}
+
+//------------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct Cube {
+    quads: [Quad; 6],
+    xs: Interval,
+    ys: Interval,
+    zs: Interval,
+}
+
+impl Cube {
+    pub fn new(orig: Vec3, u: Vec3, v: Vec3, mat: Arc<Material>) -> Self {
+        let v = v - v.dot(u) / u.length_squared() * u;
+        let w = u.cross(v);
+
+        let quads = [
+            Quad::new(orig, v, u, mat.clone()),
+            Quad::new(orig, u, w, mat.clone()),
+            Quad::new(orig, w, v, mat.clone()),
+            Quad::new(orig + u, v, w, mat.clone()),
+            Quad::new(orig + v, w, u, mat.clone()),
+            Quad::new(orig + w, u, v, mat),
+        ];
+
+        let points = [
+            orig,
+            orig + u,
+            orig + v,
+            orig + w,
+            orig + u + v,
+            orig + u + w,
+            orig + v + w,
+            orig + u + v + w,
+        ];
+
+        let (xs, ys, zs) = (
+            interval_for(&points, Vec3::x),
+            interval_for(&points, Vec3::y),
+            interval_for(&points, Vec3::z),
+        );
+
+        Self {
+            quads,
+            xs,
+            ys,
+            zs,
+        }
+    }
+}
+
+impl Hittable for Cube {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<Hit<'_>> {
+        let (closest_hit, _) = self.quads.iter().fold(
+            (None, f64::INFINITY),
+            |(closest_hit, closest), quad| match quad.hit(ray, ray_t) {
+                Some(hit) if hit.distance < closest => {
+                    let distance = hit.distance;
+                    (Some(hit), distance)
+                }
+                _ => (closest_hit, closest),
+            },
+        );
+
+        closest_hit
+    }
+
+    fn xs(&self) -> Interval {
+        self.xs
+    }
+
+    fn ys(&self) -> Interval {
+        self.ys
+    }
+
+    fn zs(&self) -> Interval {
+        self.zs
+    }
+}
+
+//------------------------------------------------------------------------------
+
+fn interval_for(points: &[Vec3], axis: fn(&Vec3) -> f64) -> Interval {
+    let min = points
+        .iter()
+        .map(axis)
+        .min_by(|a, b| a.total_cmp(b))
+        .unwrap();
+    let max = points
+        .iter()
+        .map(axis)
+        .max_by(|a, b| a.total_cmp(b))
+        .unwrap();
+    Interval::new(min, max)
 }

@@ -1,6 +1,7 @@
 use std::array;
 
 pub const ZERO_INTERVAL: Interval = Interval::new(0.0, 0.0);
+pub const INF_INTERVAL: Interval = Interval::new(f64::NEG_INFINITY, f64::INFINITY);
 
 #[derive(Debug, Copy, Clone)]
 pub struct Interval {

@@ -167,7 +167,9 @@ where
         .reduce(Interval::bounding)
 }
 
-fn split_box(mut shapes: Vec<Arc<dyn Hittable>>, axis: fn(&dyn Hittable) -> Interval) -> (Vec<Arc<dyn Hittable>>, Vec<Arc<dyn Hittable>>) {
+type SplitShapes = (Vec<Arc<dyn Hittable>>, Vec<Arc<dyn Hittable>>);
+
+fn split_box(mut shapes: Vec<Arc<dyn Hittable>>, axis: fn(&dyn Hittable) -> Interval) -> SplitShapes {
     let min_center = shapes
         .iter()
         .map(|shape| axis(shape.as_ref()).center())

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use raytracer::camera::CameraConfig;
 use raytracer::interval::Interval;
-use raytracer::shape::{Quad, Sphere};
+use raytracer::shape::{Cube, Quad, Sphere};
 use raytracer::{
     camera::Camera,
     material::{Lambertian, Material, Metal, Refractive},
@@ -44,12 +44,12 @@ fn main() -> Result<()> {
         }
     }
 
-    // Mirror
-    scene.add_shape(Arc::new(Quad::new(
-        Vec3::new(15.0, 15.0, 1.0),
-        Vec3::new(0.0, -15.0, 0.0),
-        Vec3::new(-5.0, 0.0, 5.0),
-        Arc::new(Material::Metal(Metal::new(Color::new(0.8, 0.8, 0.8), 0.00001))),
+    // Cube
+    scene.add_shape(Arc::new(Cube::new(
+        Vec3::new(5.0, 5.0, 2.0),
+        Vec3::new(0.0, -3.0, 0.0),
+        Vec3::new(3.0, 0.0, 0.0),
+        Arc::new(Material::Lambertian(Lambertian::new(Color::new(0.4, 0.1, 0.1))))
     )));
 
     scene.build_tree();
