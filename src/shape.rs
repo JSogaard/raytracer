@@ -1,4 +1,3 @@
-use crate::interval::{self, INF_INTERVAL};
 use crate::{interval::Interval, material::Material, ray::Ray, vec3::Vec3};
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -132,9 +131,9 @@ impl Quad {
         let normal = n.normalize();
         let d = normal.dot(orig);
         let w = n / n.dot(n);
-        let opposit = orig + vert1 + vert2;
+        let opposite = orig + vert1 + vert2;
 
-        let points = [orig, orig + vert1, orig + vert2, opposit];
+        let points = [orig, orig + vert1, orig + vert2, opposite];
 
         let (xs, ys, zs) = (
             interval_for(&points, Vec3::x),
@@ -301,3 +300,4 @@ fn interval_for(points: &[Vec3], axis: fn(&Vec3) -> f64) -> Interval {
         .unwrap();
     Interval::new(min, max)
 }
+

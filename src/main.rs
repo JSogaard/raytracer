@@ -16,9 +16,11 @@ fn main() -> Result<()> {
     let ground_mat = Arc::new(Material::Lambertian(Lambertian::new(Color::new(
         0.25, 0.5, 0.25,
     ))));
-    scene.add_shape(Arc::new(Sphere::new(
-        Vec3::new(0.0, 0.0, -5000.0),
-        5000.0,
+
+    scene.add_shape(Arc::new(Quad::new(
+        Vec3::new(-5000.0, -5000.0, 0.0),
+        Vec3::new(10000.0, 0.0, 0.0),
+        Vec3::new(0.0, 10000.0, 0.0),
         ground_mat,
     )));
 
